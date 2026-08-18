@@ -1,0 +1,3756 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACES FAE Tool - Phase 2 Site Survey</title>
+    <style>
+        :root {
+            --primary: #0052cc;
+            --primary-dark: #003d99;
+            --secondary: #00a3bf;
+            --bg-light: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #172b4d;
+            --text-muted: #5e6c84;
+            --border-color: #dfe1e6;
+            --success: #36b37e;
+            --warning: #ffab00;
+            --danger: #ff5630;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0747a6 0%, #0052cc 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .logo-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-title p {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: #36b37e;
+            color: white;
+        }
+        .btn-primary:hover { background-color: #2e986a; }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.3); }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        .btn-outline:hover { background-color: rgba(0, 82, 204, 0.08); }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover { background-color: #de350b; }
+
+        .btn-danger-outline {
+            background-color: rgba(255, 86, 48, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .btn-danger-outline:hover {
+            background-color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .nav-tabs {
+            background-color: white;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            overflow-x: auto;
+            padding: 0 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn {
+            padding: 14px 18px;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            background-color: #f4f5f7;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background-color: #ebf0ff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            width: 100%;
+            flex: 1;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 120px;
+        }
+
+        .form-control::placeholder {
+            color: #8993a4;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
+        }
+
+        .form-control:disabled {
+            background-color: #f4f5f7;
+            color: #a5adba;
+            cursor: not-allowed;
+            border-color: transparent;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            margin-top: 0.5rem;
+        }
+
+        table.data-table th {
+            background-color: #f4f5f7;
+            color: var(--text-main);
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        table.data-table td {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        table.data-table tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        table.data-table tr:hover {
+            background-color: #ebf0ff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .badge-danger { background-color: #ffebe6; color: var(--danger); }
+        .badge-success { background-color: #e3fcef; color: #006644; }
+        .badge-info { background-color: #deebff; color: var(--primary); }
+        .badge-custom { background-color: #e6fcff; color: #0052cc; border: 1px solid #b3d4ff; }
+
+        /* HVAC Diagram：內嵌 Diagram Builder 畫布容器 */
+        .hvac-builder-frame-outer {
+            position: relative;
+        }
+        .hvac-builder-frame-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 70vh;
+            min-height: 480px;
+            max-height: 760px;
+            background: #fff;
+            transition: none;
+        }
+        .hvac-builder-frame-wrap iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* 放大編輯區 (CSS 模擬全螢幕) */
+        .hvac-builder-frame-wrap.is-pseudo-fullscreen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            max-height: none;
+            min-height: 0;
+            border-radius: 0;
+            border: none;
+            z-index: 9999;
+        }
+        .hvac-fullscreen-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 10000;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            transition: all 0.2s ease;
+        }
+        .hvac-fullscreen-btn:hover {
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+        }
+        body.hvac-fullscreen-active {
+            overflow: hidden;
+        }
+
+        .hvac-apply-bar {
+            margin-top: 1rem;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: #fafbfc;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 14px;
+        }
+
+        .sub-tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .sub-tab-btn {
+            padding: 6px 14px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .sub-tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .notice-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid var(--secondary);
+            padding: 12px 16px;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 1rem;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(9, 30, 66, 0.54);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            padding: 1.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        footer {
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo-title">
+        <h1>ACES FAE Tool (Phase 2 Site Survey)</h1>
+        <p>AI Cooling Energy Saving Solution - Field Data Collection & Schema Builder</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-danger-outline" onclick="resetEntireProject()">🔄 重設表單 (Reset)</button>
+        <button class="btn btn-secondary" onclick="exportProjectZip()">💾 匯出專案 ZIP 封包 (.zip)</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()">📂 載入專案 (.zip / .json)</button>
+        <input type="file" id="importFileInput" accept=".zip,.json,.txt" style="display:none;" onchange="importProjectFile(event)">
+        <button class="btn btn-primary" onclick="exportMasterJSON()">🚀 匯出 AI Master JSON</button>
+    </div>
+</header>
+
+<div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('site-master', this)">1. Site Master</button>
+    <button class="tab-btn" onclick="switchTab('geometry', this)">2. Layout & Geometry</button>
+    <button class="tab-btn" onclick="switchTab('hvac', this)">3. HVAC Diagram</button>
+    <button class="tab-btn" onclick="switchTab('cooling', this)">4. Cooling Units</button>
+    <button class="tab-btn" onclick="switchTab('rack', this)">5. Rack Survey</button>
+    <button class="tab-btn" onclick="switchTab('sensors', this)">6. Sensors List</button>
+    <button class="tab-btn" onclick="switchTab('io-table', this)">7. I/O Table</button>
+    <button class="tab-btn" onclick="switchTab('om-params', this)">8. O&M Parameters</button>
+</div>
+
+<div class="container">
+
+    <!-- 1. SITE MASTER -->
+    <div id="site-master" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Site Master / 場域基本資訊與機房清單</span>
+                <span class="badge badge-info">Global Context</span>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Client Name / 客戶名稱</label>
+                    <input type="text" id="clientName" class="form-control" value="" placeholder="請輸入客戶名稱..." onchange="updateState()">
+                </div>
+                <div class="form-group">
+                    <label>Site ID / 場域代號</label>
+                    <input type="text" id="siteId" class="form-control" value="" placeholder="例如: TPE-HQ" onchange="updateState()">
+                </div>
+                <div class="form-group">
+                    <label>FAE Owner / 負責工程師</label>
+                    <input type="text" id="faeOwner" class="form-control" value="" placeholder="請輸入工程師姓名..." onchange="updateState()">
+                </div>
+                <div class="form-group">
+                    <label>Survey Date / 勘查日期</label>
+                    <input type="date" id="surveyDate" class="form-control" value="" onchange="updateState()">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">機房清單 (Room List)</span>
+                <button class="btn btn-outline btn-sm" onclick="addRoom()">＋ 新增 Room</button>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table" id="roomTable">
+                    <thead>
+                        <tr>
+                            <th>Room ID / 機房編號</th>
+                            <th>Room Name / 機房名稱</th>
+                            <th>Scenario / 場域情境</th>
+                            <th>Total Zones / 涵蓋區域數</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roomTableBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. LAYOUT & GEOMETRY -->
+    <div id="geometry" class="tab-content">
+        <div class="notice-box">
+            💡 切換上方 Room 頁籤，填寫該機房之 2D/3D 幾何資訊與各 Zone 的風道/封閉細節。設定的 Zone ID 將自動同步至後續 Rack 與 Sensor 模組。
+        </div>
+
+        <div class="sub-tab-nav" id="roomSubTabs">
+            <!-- Dynamic Room Subtabs -->
+        </div>
+
+        <div id="roomGeometryContent">
+            <!-- Dynamic Room Geometry Form -->
+        </div>
+    </div>
+
+    <!-- 3. HVAC DIAGRAM -->
+    <div id="hvac" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">HVAC Topology Diagram / 水路與空調系統架構</span>
+            </div>
+
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                直接在下方畫布拖拉元件、連接冷/熱水管線建立架構圖；若已有既有的架構圖 JSON 檔案，也可以用畫布工具列的「Import JSON」按鈕或直接拖曳檔案到畫布上載入，繼續編輯。完成後點擊「套用架構圖到 Cooling Units」，系統會自動解析並將灰區設備 (Chiller, Pump, Cooling Tower 等) 連動同步至 Cooling Units List。
+            </p>
+
+            <div class="hvac-builder-frame-outer">
+                <button type="button" class="hvac-fullscreen-btn" id="hvacFullscreenBtn" onclick="toggleHvacEmbedFullscreen()">放大編輯區</button>
+                <div class="hvac-builder-frame-wrap" id="hvacBuilderFrameWrap">
+                    <iframe id="hvacBuilderFrame" title="HVAC Diagram Builder" allow="fullscreen" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div id="hvacFileInfo" style="margin-top: 12px;"></div>
+            <div id="hvacParsedSummary" style="margin-top: 1rem;">
+                <!-- Parsed nodes summary -->
+            </div>
+
+            <div class="hvac-apply-bar">
+                <button type="button" class="btn btn-primary" onclick="applyHvacBuilderDiagram()">✅ 套用架構圖到 Cooling Units</button>
+                <span style="font-size:0.82rem; color: var(--text-muted);">在畫布上完成繪製或載入後，需點擊此按鈕才會將架構圖同步進本頁面；點擊前的畫布內容不會自動儲存。</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. COOLING UNITS -->
+    <div id="cooling" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Cooling Units List / 冷卻設備列表</span>
+                <button class="btn btn-outline btn-sm" onclick="addCoolingUnit()">＋ 新增設備</button>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Space / 區域</th>
+                            <th>Room ID / 機房編號</th>
+                            <th>Adjacent Zone / Hot Aisle</th>
+                            <th>Equipment Type / 設備類型</th>
+                            <th>Equipment ID / 設備編號</th>
+                            <th>Equipment Model / 品牌+型號</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coolingUnitsBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Cooling Units Dynamic SPEC Form / 冷卻設備規格參數</span>
+                <span class="badge badge-success">Reactive Auto-Generated</span>
+            </div>
+            <div class="sub-tab-nav" id="coolingSpecSubNav">
+                <button class="sub-tab-btn active" onclick="switchCoolingSpecTab('white', this)">❄️ White Space - Cooling Units SPEC (分 Room / Zone)</button>
+                <button class="sub-tab-btn" onclick="switchCoolingSpecTab('grey', this)">🏭 Grey Space - Cooling Units SPEC</button>
+            </div>
+            <div id="coolingSpecForms">
+                <!-- Dynamic per-equipment specs -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. RACK SURVEY -->
+    <div id="rack" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Rack Survey / 機櫃盤點表</span>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div id="rackBatchToolbar" style="display:flex; gap:8px; align-items:center;">
+                        <span id="selectedRackCount" style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">已選取 0 項</span>
+                        <button class="btn btn-outline btn-sm" onclick="batchDuplicateRacks()">⚡ 批量複製所選</button>
+                        <button class="btn btn-danger btn-sm" onclick="batchDeleteRacks()">🗑️ 批量刪除所選</button>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="openBatchRackModal()">⚡ 批量新增機櫃</button>
+                    <button class="btn btn-outline btn-sm" onclick="addRackRow()">＋ 新增單筆</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAllRacks" onchange="toggleSelectAllRacks(this)"></th>
+                            <th>Room ID</th>
+                            <th>Zone ID</th>
+                            <th>Rack No.</th>
+                            <th>Design Power Capacity (kW)</th>
+                            <th>Rack ID (Auto)</th>
+                            <th>High Density (>=20kW)</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rackTableBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. SENSORS LIST -->
+    <div id="sensors" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Sensors List / 感測器列表</span>
+                <div>
+                    <button class="btn btn-outline btn-sm" onclick="autoGenerateRackSensors()">⚡ 一鍵生成標準感測器</button>
+                    <button class="btn btn-outline btn-sm" onclick="addSensorRow()">＋ 新增單筆</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sensor Type / 類型</th>
+                            <th>Sensor ID</th>
+                            <th>Attachment / 依附物</th>
+                            <th>Rack ID</th>
+                            <th>Inlet or Outlet</th>
+                            <th>Remarks / 備註</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sensorTableBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. I/O TABLE -->
+    <div id="io-table" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Data Points Requirement / 點位資料需求表 (I/O Table)</span>
+                <button class="btn btn-outline btn-sm" onclick="exportIoTableCsv()">📥 匯出 I/O Table CSV</button>
+            </div>
+            <div class="sub-tab-nav">
+                <button class="sub-tab-btn active" onclick="switchIoTab('white-cooling', this)">❄️ White Space Cooling</button>
+                <button class="sub-tab-btn" onclick="switchIoTab('gray-cooling', this)">🏭 Grey Space Cooling</button>
+                <button class="sub-tab-btn" onclick="switchIoTab('rack-io', this)">🖥️ Rack Telemetry</button>
+            </div>
+
+            <div id="ioTableContent" style="overflow-x: auto;">
+                <!-- Dynamic I/O Table -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. O&M PARAMETERS -->
+    <div id="om-params" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">O&M Control Parameters / 營運與 AI 控制邊界矩陣</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-outline btn-sm" onclick="applyAshraeToAllRacks()">⚡ 套用 ASHRAE 建議值至所有機櫃</button>
+                    <button class="btn btn-outline btn-sm" onclick="applyFirstRackOmToAll()">⚡ 將首台機櫃參數套用至所有機櫃</button>
+                    <button class="btn btn-outline btn-sm" onclick="exportOmCsv()">📥 匯出 O&M CSV</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Type / 條件類型</th>
+                            <th>Item / 項目</th>
+                            <th>Item ID / 項目 ID</th>
+                            <th>Constraints / 限制參數</th>
+                            <th>Suggested Value / 建議值</th>
+                            <th>Upper Limit / 上限</th>
+                            <th>Lower Limit / 下限</th>
+                        </tr>
+                    </thead>
+                    <tbody id="omTableBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- BATCH RACK MODAL -->
+<div class="modal-overlay" id="batchRackModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <span>⚡ 批量新增機櫃 (Batch Generator)</span>
+            <button style="border:none; background:none; cursor:pointer;" onclick="closeBatchRackModal()">✕</button>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>選擇 Room</label>
+            <select id="batchRoomSelect" class="form-control" onchange="updateBatchZoneOptions()"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>選擇 Zone</label>
+            <select id="batchZoneSelect" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>新增機櫃數量 (數量)</label>
+            <input type="number" id="batchCount" class="form-control" value="5" min="1" max="50">
+        </div>
+        <div class="form-group" style="margin-bottom:1.5rem;">
+            <label>預設設計電力容量 (kW)</label>
+            <input type="number" id="batchPower" class="form-control" value="20">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn btn-outline btn-sm" onclick="closeBatchRackModal()">取消</button>
+            <button class="btn btn-primary btn-sm" onclick="executeBatchRack()">確認新增</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    ACES FAE Tool - Digital Twin & Optimization Lab © 2026 Delta Electronics. All Rights Reserved.
+</footer>
+
+<script>
+// --- EMPTY STATE GENERATOR ---
+function getEmptyState() {
+    return {
+        siteInfo: { clientName: "", siteId: "", faeOwner: "", surveyDate: "" },
+        rooms: [],
+        hvacJson: "", hvacFileName: "",
+        coolingUnits: [], racks: [], sensors: [],
+        activeRoomTab: 0, activeIoTab: "white-cooling", activeCoolingSpecTab: "white"
+    };
+}
+
+let state = getEmptyState();
+
+// --- SMART REPACK ZONE IDs ---
+function reassignAllDefaultZoneIds() {
+    let customIds = new Set();
+    state.rooms.forEach(r => {
+        if (r.zones) {
+            r.zones.forEach(z => {
+                if (z.isCustomId && z.zoneId) {
+                    customIds.add(z.zoneId.trim().toUpperCase());
+                }
+            });
+        }
+    });
+
+    let charCode = 65; 
+    
+    state.rooms.forEach(room => {
+        if (room.zones) {
+            room.zones.forEach(zone => {
+                if (!zone.isCustomId) {
+                    while (customIds.has(String.fromCharCode(charCode)) && charCode <= 90) {
+                        charCode++;
+                    }
+                    
+                    let newZoneId;
+                    if (charCode <= 90) {
+                        newZoneId = String.fromCharCode(charCode);
+                        charCode++;
+                    } else {
+                        let counter = 1;
+                        while(true) {
+                            let fb = `Z${counter}`;
+                            if (!customIds.has(fb) && !state.rooms.some(r => r.zones.some(z => z !== zone && z.zoneId === fb))) {
+                                newZoneId = fb;
+                                break;
+                            }
+                            counter++;
+                        }
+                    }
+
+                    if (zone.zoneId !== newZoneId) {
+                        let oldZoneId = zone.zoneId;
+                        zone.zoneId = newZoneId;
+                        cascadeZoneIdUpdate(room.roomId, oldZoneId, newZoneId);
+                    }
+                }
+            });
+        }
+    });
+}
+
+function cascadeZoneIdUpdate(roomId, oldZoneId, newZoneId) {
+    if (!oldZoneId || oldZoneId === newZoneId) return;
+
+    state.racks.forEach(r => {
+        if (r.roomId === roomId && r.zoneId === oldZoneId) {
+            r.zoneId = newZoneId;
+        }
+    });
+
+    state.sensors.forEach(s => {
+        if (s.attachment === 'Rack' && s.rackId && s.rackId.startsWith(oldZoneId + '-')) {
+            s.rackId = s.rackId.replace(oldZoneId + '-', newZoneId + '-');
+        }
+    });
+
+    state.coolingUnits.forEach(u => {
+        if (u.roomId === roomId && u.zoneId === oldZoneId) {
+            u.zoneId = newZoneId;
+            if (u.adjacentHotAisle === `Hot Aisle ${oldZoneId}`) {
+                u.adjacentHotAisle = `Hot Aisle ${newZoneId}`;
+            }
+        }
+    });
+}
+
+// --- DICTIONARIES ---
+const WHITE_SPACE_EQUIPMENT = [
+    "Row Cool (CW) / 列間式空調 (冰水型)", "Row Cool (DX) / 列間式空調 (冷媒型)",
+    "CRAC / 直膨式機房精密空調", "CRAH / 冰水式機房精密空調",
+    "AALC / 列間式液對氣 CDU", "L2A CDU (In-Rack) / 機櫃式液對氣 CDU",
+    "L2L CDU (In-Rack) / 機櫃式液對液 CDU", "L2L CDU (In-Row) / 列間式液對液 CDU"
+];
+
+const GRAY_SPACE_EQUIPMENT = [
+    "Pump-ConstantSpeed / 定頻式幫浦", "Pump-VariableSpeed / 變頻式幫浦",
+    "Chiller / 冰水機", "Cooling Tower / 冷卻水塔",
+    "Dry Cooler / 乾冷器", "Heat Exchanger / 板式熱交換器"
+];
+
+const COOLING_SPEC_DICT = {
+    "Row Cool (CW)": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "chilledWaterOutletTemp", "label": "Design Chilled Water Outlet Temp / 額定冰水出水溫度 (°C)", "default": "" },
+        { "key": "waterFlowRate", "label": "Design Water Flow Rate / 額定冰水流量 (m3/s)", "default": 0.001138333 },
+        { "key": "inletWaterTemp", "label": "Design Inlet Water Temp / 額定冰水入水溫度 (°C)", "default": 7 },
+        { "key": "inletAirTempDB", "label": "Design Inlet Air Temp DB / 額定回風溫度 DB (°C)", "default": "" },
+        { "key": "inletAirTempWB", "label": "Design Inlet Air Temp WB / 額定回風溫度 WB (°C)", "default": "" },
+        { "key": "outletAirTemp", "label": "Design Outlet Air Temp / 額定出風溫度 (°C)", "default": "" },
+        { "key": "inletAirHumidityRatio", "label": "Design Inlet Air Humidity Ratio / 額定進風濕度比", "default": "" },
+        { "key": "outletAirHumidityRatio", "label": "Design Outlet Air Humidity Ratio / 額定出風濕度比", "default": "" },
+        { "key": "pressureRise", "label": "Design Pressure Rise / 額定壓差 (Pa)", "default": 1000 },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": 1.369444444 }
+    ],
+    "Row Cool (DX)": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "inletAirTempDB", "label": "Design Inlet Air Temp DB (°C)", "default": "" },
+        { "key": "inletAirTempWB", "label": "Design Inlet Air Temp WB (°C)", "default": "" },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": 1.389 },
+        { "key": "cop", "label": "Gross Design Cooling COP / 總額定冷卻效能係數 (W/W)", "default": 4.5669 },
+        { "key": "outletAirTemp", "label": "Design Outlet Air Temp / 額定出風溫度 (°C)", "default": "" }
+    ],
+    "CRAC": [
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": 1.389 },
+        { "key": "cop", "label": "Gross Design Cooling COP / 總額定冷卻效能係數 (W/W)", "default": 4.5669 },
+        { "key": "outletAirTemp", "label": "Design Outlet Air Temp / 額定出風溫度 (°C)", "default": "" }
+    ],
+    "CRAH": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "chilledWaterOutletTemp", "label": "Design Chilled Water Outlet Temp / 額定冰水出水溫度 (°C)", "default": "" },
+        { "key": "waterFlowRate", "label": "Design Water Flow Rate / 額定冰水流量 (m3/s)", "default": 0.001138333 },
+        { "key": "inletWaterTemp", "label": "Design Inlet Water Temp / 額定冰水入水溫度 (°C)", "default": 7 },
+        { "key": "inletAirTempDB", "label": "Design Inlet Air Temp DB (°C)", "default": "" },
+        { "key": "inletAirTempWB", "label": "Design Inlet Air Temp WB (°C)", "default": "" },
+        { "key": "outletAirTemp", "label": "Design Outlet Air Temp (°C)", "default": "" },
+        { "key": "inletAirHumidityRatio", "label": "Design Inlet Air Humidity Ratio", "default": "" },
+        { "key": "outletAirHumidityRatio", "label": "Design Outlet Air Humidity Ratio", "default": "" },
+        { "key": "pressureRise", "label": "Design Pressure Rise / 額定壓差 (Pa)", "default": 1000 },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": 1.369444444 }
+    ],
+    "AALC": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "ambientTemp", "label": "Design Ambient Temp / 額定環境溫度 (°C)", "default": "" },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": "" },
+        { "key": "coolantSupplyTemp", "label": "Design Coolant Supply Temp / 額定冷卻液供水溫度 (°C)", "default": "" },
+        { "key": "coolantFlowRate", "label": "Design Coolant Flow Rate / 額定冷卻液流量 (m3/s)", "default": "" },
+        { "key": "approachTemp", "label": "Design Approach Temp / 額定趨近溫度 (°C)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "coolantType", "label": "Coolant Type / 冷卻液種類", "default": "" }
+    ],
+    "L2A CDU (In-Rack)": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "ambientTemp", "label": "Design Ambient Temp / 額定環境溫度 (°C)", "default": "" },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": "" },
+        { "key": "coolantSupplyTemp", "label": "Design Coolant Supply Temp / 額定冷卻液供水溫度 (°C)", "default": "" },
+        { "key": "coolantFlowRate", "label": "Design Coolant Flow Rate / 額定冷却液流量 (m3/s)", "default": "" },
+        { "key": "approachTemp", "label": "Design Approach Temp / 額定趨近溫度 (°C)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "coolantType", "label": "Coolant Type / 冷卻液種類", "default": "" }
+    ],
+    "L2L CDU (In-Rack)": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "primaryCoolantType", "label": "Primary Coolant Type / 一次側冷卻液種類", "default": "" },
+        { "key": "primaryFlowRate", "label": "Primary Design Flow Rate / 一次側額定流量 (m3/s)", "default": "" },
+        { "key": "primaryInletTemp", "label": "Primary Design Inlet Temp / 一次側額定進水溫度 (°C)", "default": "" },
+        { "key": "secondaryCoolantType", "label": "Secondary Coolant Type / 二次側冷卻液種類", "default": "" },
+        { "key": "secondaryFlowRate", "label": "Secondary Design Flow Rate / 二次側額定流量 (m3/s)", "default": "" },
+        { "key": "secondaryApproachTemp", "label": "Secondary Approach Temp / 二次側額定趨近溫度 (°C)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" }
+    ],
+    "L2L CDU (In-Row)": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "primaryCoolantType", "label": "Primary Coolant Type / 一次側冷卻液種類", "default": "" },
+        { "key": "primaryFlowRate", "label": "Primary Design Flow Rate / 一次側額定流量 (m3/s)", "default": "" },
+        { "key": "primaryInletTemp", "label": "Primary Design Inlet Temp / 一次側額定進水溫度 (°C)", "default": "" },
+        { "key": "secondaryCoolantType", "label": "Secondary Coolant Type / 二次側冷卻液種類", "default": "" },
+        { "key": "secondaryFlowRate", "label": "Secondary Design Flow Rate / 二次側額定流量 (m3/s)", "default": "" },
+        { "key": "secondaryApproachTemp", "label": "Secondary Approach Temp / 二次側額定趨近溫度 (°C)", "default": "" },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" }
+    ],
+    "Pump-ConstantSpeed": [
+        { "key": "flowRate", "label": "Design Flow Rate / 額定流量 (m3/s)", "default": "" },
+        { "key": "pumpHead", "label": "Design Pump Head / 額定幫浦揚程 (Pa)", "default": 179352 },
+        { "key": "powerConsumption", "label": "Design Power Consumption / 額定功耗 (W)", "default": "" },
+        { "key": "motorEfficiency", "label": "Motor Efficiency / 馬達效率", "default": 0.956 }
+    ],
+    "Pump-VariableSpeed": [
+        { "key": "maxFlowRate", "label": "Design Maximum Flow Rate / 額定最大流量 (m3/s)", "default": "" },
+        { "key": "pumpHead", "label": "Design Pump Head / 額定幫浦揚程 (Pa)", "default": 179352 },
+        { "key": "powerConsumption", "label": "Design Power Consumption / 額定功耗 (W)", "default": 138075.3138 },
+        { "key": "motorEfficiency", "label": "Motor Efficiency / 馬達效率", "default": 0.956 }
+    ],
+    "Chiller": [
+        { "key": "maxCoolingCapacity", "label": "Design Maximum Cooling Capacity / 額定最大冷卻能力 (W)", "default": 92775 },
+        { "key": "cop", "label": "Design COP / 額定性能係數", "default": 3.35 },
+        { "key": "outletChilledWaterTemp", "label": "Design Outlet Chilled Water Temp / 額定冰水出水溫度 (°C)", "default": 6.67 },
+        { "key": "inletChilledWaterTemp", "label": "Design Inlet Chilled Water Temp / 額定冰水進水溫度 (°C)", "default": "" },
+        { "key": "outletCondenserTemp", "label": "Design Outlet Condenser Fluid Temp / 額定冷凝器出水溫度 (°C)", "default": "" },
+        { "key": "inletCondenserTemp", "label": "Design Inlet Condenser Fluid Temp / 額定冷凝器進水溫度 (°C)", "default": 29.4 },
+        { "key": "chilledWaterFlowRate", "label": "Design Chilled Water Flow Rate / 額定冰水流量 (m3/s)", "default": "" },
+        { "key": "condenserFlowRate", "label": "Design Condenser Fluid Flow Rate / 額定冷凝器流量 (m3/s)", "default": "" },
+        { "key": "minPartLoadRatio", "label": "Minimum Part Load Ratio / 最小負載百分比", "default": 0.25 },
+        { "key": "maxPartLoadRatio", "label": "Maximum Part Load Ratio / 最大負載百分比", "default": 1 },
+        { "key": "optimumPartLoadRatio", "label": "Optimum Part Load Ratio / 最佳負載百分比", "default": 1 },
+        { "key": "minUnloadingRatio", "label": "Minimum Unloading Ratio / 最小卸載率", "default": 0.25 }
+    ],
+    "Cooling Tower": [
+        { "key": "waterFlowRate", "label": "Design Water Flow Rate / 額定冷卻水流量 (m3/s)", "default": 0.02708333 },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": 15 },
+        { "key": "inputPower", "label": "Design Input Power / 額定輸入功率 (W)", "default": "" },
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "inletAirTempDB", "label": "Design Inlet Air Temp DB / 額定回風溫度 DB (°C)", "default": 35 },
+        { "key": "inletAirTempWB", "label": "Design Inlet Air Temp WB / 額定回風溫度 WB (°C)", "default": 27 },
+        { "key": "outletWaterTemp", "label": "Design Outlet Water Temp / 額定出水溫度 (°C)", "default": "" },
+        { "key": "inletWaterTemp", "label": "Design Inlet Water Temp / 額定入水溫度 (°C)", "default": "" },
+        { "key": "approachTemp", "label": "Design Approach Temp / 額定趨近溫度 (°C)", "default": 5 },
+        { "key": "rangeTemp", "label": "Design Range Temperature / 額定冷卻溫差 (°C)", "default": 5 }
+    ],
+    "Dry Cooler": [
+        { "key": "coolingCapacity", "label": "Design Cooling Capacity / 額定冷卻能力 (W)", "default": "" },
+        { "key": "airFlowRate", "label": "Design Air Flow Rate / 額定風量 (m3/s)", "default": "" }
+    ],
+    "Heat Exchanger": [
+        { "key": "demandFlowRate", "label": "Loop Demand Side Design Flow Rate / 迴路需求側額定流量 (m3/s)", "default": 0.0084 },
+        { "key": "supplyFlowRate", "label": "Loop Supply Side Design Flow Rate / 迴路供給側額定流量 (m3/s)", "default": 0.0084 }
+    ]
+};
+
+// --- INITIALIZATION & EVENT LISTENERS ---
+window.onload = function() {
+    localStorage.removeItem('ACES_FAE_DRAFT'); 
+    state = getEmptyState();
+    renderAll();
+};
+
+function sanitizeState() {
+    if (!state) state = {};
+    if (!state.siteInfo) state.siteInfo = { clientName: "", siteId: "", faeOwner: "", surveyDate: "" };
+    if (!Array.isArray(state.rooms)) state.rooms = [];
+    if (!Array.isArray(state.coolingUnits)) state.coolingUnits = [];
+    if (!Array.isArray(state.racks)) state.racks = [];
+    if (!Array.isArray(state.sensors)) state.sensors = [];
+    
+    state.rooms.forEach(r => {
+        if (r.zones) {
+            r.zones.forEach(z => {
+                if (z.isCustomId === undefined) z.isCustomId = false;
+            });
+        }
+    });
+
+    if (state.rooms.length > 0) {
+        if (typeof state.activeRoomTab !== 'number' || state.activeRoomTab < 0 || state.activeRoomTab >= state.rooms.length) {
+            state.activeRoomTab = 0;
+        }
+    } else {
+        state.activeRoomTab = 0;
+    }
+    if (!state.activeIoTab) state.activeIoTab = "white-cooling";
+    if (!state.activeCoolingSpecTab) state.activeCoolingSpecTab = "white";
+
+    reassignAllDefaultZoneIds();
+}
+
+function syncFormInputs() {
+    if (!state.siteInfo) state.siteInfo = {};
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+    };
+    setVal('clientName', state.siteInfo.clientName);
+    setVal('siteId', state.siteInfo.siteId);
+    setVal('faeOwner', state.siteInfo.faeOwner);
+    setVal('surveyDate', state.siteInfo.surveyDate);
+    renderHvacInfo();
+}
+
+function renderAll() {
+    sanitizeState();
+    syncFormInputs();
+    renderSiteMaster();
+    renderGeometry();
+    renderCoolingUnits();
+    renderRackSurvey();
+    renderSensorsList();
+    renderIoTable();
+    renderOmParams();
+}
+
+function updateState() {
+    state.siteInfo.clientName = document.getElementById('clientName').value;
+    state.siteInfo.siteId = document.getElementById('siteId').value;
+    state.siteInfo.faeOwner = document.getElementById('faeOwner').value;
+    state.siteInfo.surveyDate = document.getElementById('surveyDate').value;
+    saveLocalStorageDraft();
+}
+
+function resetEntireProject() {
+    if (!confirm("⚠️ 警告：確定要清空並重設整張表單嗎？\n\n所有填寫內容、上傳檔案與草稿暫存將被完全清除，表單將完全空白！")) {
+        return;
+    }
+    try { localStorage.removeItem('ACES_FAE_DRAFT'); } catch(e) {}
+    state = getEmptyState();
+    sanitizeState();
+    renderAll();
+    const firstTabBtn = document.querySelectorAll('.nav-tabs .tab-btn')[0];
+    switchTab('site-master', firstTabBtn);
+    const importInput = document.getElementById('importFileInput');
+    if (importInput) importInput.value = '';
+    // 若 Diagram Builder 先前已經載入過，重設專案時一併清空畫布，避免殘留舊的架構圖
+    const hvacIframe = document.getElementById('hvacBuilderFrame');
+    if (hvacBuilderLoaded && hvacIframe && hvacIframe.contentWindow && typeof hvacIframe.contentWindow.resetCanvas === 'function') {
+        try { hvacIframe.contentWindow.resetCanvas(); } catch(e) { console.warn('無法重設 Diagram Builder 畫布:', e); }
+    }
+    alert("✅ 表單已完全清空！");
+}
+
+function switchTab(tabId, btnElem) {
+    document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.container .tab-content').forEach(c => c.classList.remove('active'));
+    if (btnElem) btnElem.classList.add('active');
+    const targetContent = document.getElementById(tabId);
+    if (targetContent) targetContent.classList.add('active');
+    if (tabId === 'hvac') {
+        ensureHvacBuilderLoaded();
+    }
+}
+
+// --- 1. SITE MASTER ---
+function renderSiteMaster() {
+    const tbody = document.getElementById('roomTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    state.rooms.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="form-control" value="${r.roomId}" onchange="updateRoom(${idx}, 'roomId', this.value)"></td>
+            <td><input type="text" class="form-control" value="${r.roomName}" onchange="updateRoom(${idx}, 'roomName', this.value)"></td>
+            <td>
+                <select class="form-control" onchange="updateRoom(${idx}, 'scenario', this.value)">
+                    <option ${r.scenario.includes('Existing') ? 'selected' : ''}>Existing / 既有場域</option>
+                    <option ${r.scenario.includes('New') ? 'selected' : ''}>New Build / 新建場域</option>
+                </select>
+            </td>
+            <td><input type="number" class="form-control" min="1" step="1" value="${r.totalZones}" onchange="updateRoom(${idx}, 'totalZones', this.value)"></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteRoom(${idx})">刪除</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function addRoom() {
+    const sId = (state.siteInfo.siteId || 'SITE');
+    let rNum = state.rooms.length + 1;
+    let newId = `${sId}-R${rNum}`;
+    while (state.rooms.some(r => r.roomId.toLowerCase() === newId.toLowerCase())) {
+        rNum++;
+        newId = `${sId}-R${rNum}`;
+    }
+    let newName = `Room ${rNum}`;
+    while (state.rooms.some(r => r.roomName.toLowerCase() === newName.toLowerCase())) {
+        rNum++;
+        newName = `Room ${rNum}`;
+    }
+
+    const newRoom = {
+        roomId: newId,
+        roomName: newName,
+        scenario: "Existing / 既有場域",
+        totalZones: 1,
+        geometry: { fileType: "2D", roomHeight: 2.5, hasRaisedFloor: true, raisedFloorHeight: 0.6, cadFiles: [] },
+        zones: []
+    };
+    state.rooms.push(newRoom);
+    
+    newRoom.zones.push({ zoneId: "", isCustomId: false, zoneType: "一般伺服器區", containmentType: "Hot Aisle Containment", hotAisleWidth: 120, photoUrl: "" });
+    reassignAllDefaultZoneIds();
+
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+function updateRoom(idx, field, value) {
+    let val = typeof value === 'string' ? value.trim() : value;
+
+    if (field === 'roomId') {
+        const isDuplicate = state.rooms.some((r, i) => i !== idx && r.roomId.toLowerCase() === String(val).toLowerCase());
+        if (isDuplicate) {
+            alert(`⚠️ 錯誤：Room ID "${val}" 已存在，請直接於輸入框中修改為唯一的 Room ID。`);
+            renderSiteMaster();
+            return;
+        }
+        const oldRoomId = state.rooms[idx].roomId;
+        state.rooms[idx].roomId = val;
+
+        if (oldRoomId !== val) {
+            state.coolingUnits.forEach(u => {
+                if (u.roomId === oldRoomId) u.roomId = val;
+            });
+            state.racks.forEach(r => {
+                if (r.roomId === oldRoomId) r.roomId = val;
+            });
+        }
+    } else if (field === 'roomName') {
+        const isDuplicate = state.rooms.some((r, i) => i !== idx && r.roomName.toLowerCase() === String(val).toLowerCase());
+        if (isDuplicate) {
+            alert(`⚠️ 錯誤：Room Name "${val}" 已存在，請直接於輸入框中修改為唯一的 Room Name。`);
+            renderSiteMaster();
+            return;
+        }
+        state.rooms[idx].roomName = val;
+    } else if (field === 'totalZones') {
+        let zCount = Math.max(1, parseInt(val, 10) || 1);
+        state.rooms[idx].totalZones = zCount;
+        adjustZonesCount(idx, zCount);
+    } else {
+        state.rooms[idx][field] = val;
+    }
+
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+function deleteRoom(idx) {
+    state.rooms.splice(idx, 1);
+    if (state.activeRoomTab >= state.rooms.length) {
+        state.activeRoomTab = Math.max(0, state.rooms.length - 1);
+    }
+    reassignAllDefaultZoneIds();
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+function adjustZonesCount(roomIdx, targetCount) {
+    const room = state.rooms[roomIdx];
+    while (room.zones.length < targetCount) {
+        room.zones.push({ zoneId: "", isCustomId: false, zoneType: "一般伺服器區", containmentType: "Hot Aisle Containment", hotAisleWidth: 120, photoUrl: "" });
+    }
+    while (room.zones.length > targetCount) {
+        room.zones.pop();
+    }
+    reassignAllDefaultZoneIds();
+}
+
+// --- 2. LAYOUT & GEOMETRY ---
+function renderGeometry() {
+    const subNav = document.getElementById('roomSubTabs');
+    const container = document.getElementById('roomGeometryContent');
+    if (!subNav || !container) return;
+    
+    subNav.innerHTML = '';
+    if (state.rooms.length === 0) {
+        container.innerHTML = '<div class="notice-box">📐 目前尚未新增任何 Room。請先至 「1. Site Master」新增 Room。</div>';
+        return;
+    }
+
+    state.rooms.forEach((r, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `sub-tab-btn ${idx === state.activeRoomTab ? 'active' : ''}`;
+        btn.innerText = `${r.roomId} (${r.roomName})`;
+        btn.onclick = () => { state.activeRoomTab = idx; renderGeometry(); };
+        subNav.appendChild(btn);
+    });
+
+    const room = state.rooms[state.activeRoomTab];
+    if (!room) return;
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Part 1 - Room Layout & Geometry (${room.roomId})</span>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>CAD Option</label>
+                    <select class="form-control" onchange="updateRoomGeo(${state.activeRoomTab}, 'fileType', this.value)">
+                        <option value="2D" ${room.geometry.fileType === '2D' ? 'selected' : ''}>Option B - 2D CAD / PDF</option>
+                        <option value="3D" ${room.geometry.fileType === '3D' ? 'selected' : ''}>Option A - 3D DWG / STEP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>2D/3D CAD Files / 圖檔上傳 (可複選多檔)</label>
+                    <input type="file" class="form-control" multiple accept=".dwg,.step,.stp,.pdf,.dxf,.png,.jpg,.jpeg,.zip,.rar" onchange="handleCadFileUpload(${state.activeRoomTab}, event)">
+                    ${renderCadFileList(room)}
+                </div>
+                <div class="form-group">
+                    <label>機房淨高 (m)</label>
+                    <input type="number" step="0.1" class="form-control" value="${room.geometry.roomHeight}" onchange="updateRoomGeo(${state.activeRoomTab}, 'roomHeight', Number(this.value))">
+                </div>
+                <div class="form-group">
+                    <label>配置高架地板?</label>
+                    <select class="form-control" onchange="updateRoomGeo(${state.activeRoomTab}, 'hasRaisedFloor', this.value === 'true')">
+                        <option value="true" ${room.geometry.hasRaisedFloor ? 'selected' : ''}>Yes / 是</option>
+                        <option value="false" ${!room.geometry.hasRaisedFloor ? 'selected' : ''}>No / 否</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>高架地板高度 (m)</label>
+                    <input type="number" step="0.1" class="form-control" value="${room.geometry.raisedFloorHeight}" ${!room.geometry.hasRaisedFloor ? 'disabled' : ''} onchange="updateRoomGeo(${state.activeRoomTab}, 'raisedFloorHeight', Number(this.value))">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Part 2 - Zone Details (${room.roomId})</span>
+            </div>
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Zone ID</th>
+                            <th>Zone Type / 屬性</th>
+                            <th>Containment Type / 封閉型式</th>
+                            <th>Hot Aisle Width (cm)</th>
+                            <th>Photo URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${room.zones.map((z, zIdx) => `
+                            <tr>
+                                <td>
+                                    <input type="text" class="form-control" value="${z.zoneId}" placeholder="自動產生" 
+                                        onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'zoneId', this.value)" 
+                                        style="font-weight:bold; width:120px; ${z.isCustomId ? 'color:var(--primary); background:#e6fcff; border-color:#b3d4ff;' : ''}" 
+                                        title="${z.isCustomId ? '手動自訂 Zone ID' : '自動連號產生 (清除即可還原為自動)'}">
+                                </td>
+                                <td>
+                                    <select class="form-control" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'zoneType', this.value)">
+                                        <option ${z.zoneType === '一般伺服器區' ? 'selected' : ''}>一般伺服器區</option>
+                                        <option ${z.zoneType === '高密度機櫃區' ? 'selected' : ''}>高密度機櫃區</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'containmentType', this.value)">
+                                        <option ${z.containmentType === 'Hot Aisle Containment' ? 'selected' : ''}>Hot Aisle Containment</option>
+                                        <option ${z.containmentType === 'Cold Aisle Containment' ? 'selected' : ''}>Cold Aisle Containment</option>
+                                        <option ${z.containmentType === 'Open' ? 'selected' : ''}>Open / 無封閉</option>
+                                    </select>
+                                </td>
+                                <td><input type="number" class="form-control" value="${z.hotAisleWidth}" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'hotAisleWidth', Number(this.value))"></td>
+                                <td><input type="text" class="form-control" placeholder="貼上照片連結..." value="${z.photoUrl}" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'photoUrl', this.value)"></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderCadFileList(room) {
+    if (!room || !room.geometry) return '';
+    let files = room.geometry.cadFiles || [];
+    if (files.length === 0 && room.geometry.cadFileName) {
+        files = [{ fileName: room.geometry.cadFileName, fileData: room.geometry.cadFileData }];
+        room.geometry.cadFiles = files;
+    }
+    if (files.length === 0) return '';
+    return `
+        <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+            ${files.map((f, fIdx) => `
+                <div style="font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; justify-content:space-between; background:#f4f5f7; padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);">
+                    <span>📎 <strong>${f.fileName}</strong></span>
+                    <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function handleCadFileUpload(roomIdx, event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    if (!state.rooms[roomIdx].geometry) state.rooms[roomIdx].geometry = {};
+    if (!state.rooms[roomIdx].geometry.cadFiles) state.rooms[roomIdx].geometry.cadFiles = [];
+
+    let loadedCount = 0;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            state.rooms[roomIdx].geometry.cadFiles.push({
+                fileName: file.name,
+                fileData: e.target.result
+            });
+            loadedCount++;
+            if (loadedCount === files.length) {
+                saveLocalStorageDraft();
+                renderGeometry();
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeCadFile(roomIdx, fileIdx) {
+    if (state.rooms[roomIdx] && state.rooms[roomIdx].geometry) {
+        if (state.rooms[roomIdx].geometry.cadFiles) {
+            state.rooms[roomIdx].geometry.cadFiles.splice(fileIdx, 1);
+        }
+        state.rooms[roomIdx].geometry.cadFileName = "";
+        state.rooms[roomIdx].geometry.cadFileData = "";
+    }
+    saveLocalStorageDraft();
+    renderGeometry();
+}
+
+function updateRoomGeo(roomIdx, field, val) {
+    state.rooms[roomIdx].geometry[field] = val;
+    renderGeometry();
+    saveLocalStorageDraft();
+}
+
+function updateZone(roomIdx, zoneIdx, field, val) {
+    if (field === 'zoneId') {
+        let curVal = String(val).trim().toUpperCase();
+        
+        if (!curVal) {
+            state.rooms[roomIdx].zones[zoneIdx].isCustomId = false;
+            reassignAllDefaultZoneIds();
+            saveLocalStorageDraft();
+            renderAll();
+            return;
+        }
+
+        const isDuplicate = state.rooms.some((r, rIdx) => 
+            r.zones.some((z, zIdx) => (rIdx !== roomIdx || zIdx !== zoneIdx) && z.zoneId.toLowerCase() === curVal.toLowerCase())
+        );
+
+        if (isDuplicate) {
+            alert(`⚠️ 警告：Zone ID "${curVal}" 已存在，請輸入唯一的 Zone ID。`);
+            renderGeometry();
+            return;
+        }
+
+        const oldZoneId = state.rooms[roomIdx].zones[zoneIdx].zoneId;
+        state.rooms[roomIdx].zones[zoneIdx].zoneId = curVal;
+        state.rooms[roomIdx].zones[zoneIdx].isCustomId = true; 
+
+        cascadeZoneIdUpdate(state.rooms[roomIdx].roomId, oldZoneId, curVal);
+        reassignAllDefaultZoneIds(); 
+    } else {
+        state.rooms[roomIdx].zones[zoneIdx][field] = val;
+    }
+    saveLocalStorageDraft();
+    renderAll();
+}
+
+// --- 3. HVAC DIAGRAM ---
+function parseAndSyncHvacJson(raw, fileName) {
+    try {
+        if (!raw || !raw.trim()) return;
+        const parsed = JSON.parse(raw);
+        
+        let nodesArray = [];
+        if (Array.isArray(parsed)) {
+            nodesArray = parsed;
+        } else if (parsed.nodes && Array.isArray(parsed.nodes)) {
+            nodesArray = parsed.nodes;
+        } else if (parsed.components && Array.isArray(parsed.components)) {
+            nodesArray = parsed.components;
+        } else if (parsed.elements && Array.isArray(parsed.elements)) {
+            nodesArray = parsed.elements;
+        } else {
+            for (const key in parsed) {
+                if (Array.isArray(parsed[key])) {
+                    nodesArray = parsed[key];
+                    break;
+                }
+            }
+        }
+
+        if (nodesArray.length > 0) {
+            let addedCount = 0;
+            nodesArray.forEach(node => {
+                const nodeType = node.type || node.category || node.kind || '';
+                const nodeId = node.id || node.name || node.key || '';
+                
+                const isGreyEq = ['Chiller', 'Pump', 'CoolingTower', 'HeatExchanger', 'Pump-VariableSpeed', 'Pump-ConstantSpeed'].includes(nodeType) || 
+                                 nodeType.includes('Chiller') || nodeType.includes('Pump') || nodeType.includes('Tower') ||
+                                 nodeType.includes('Exchanger') || nodeType.includes('Cooler') ||
+                                 nodeId.startsWith('CH') || nodeId.startsWith('HE') || nodeId.startsWith('CT') || nodeId.startsWith('PV') || nodeId.startsWith('CHP') || nodeId.startsWith('CWP');
+                
+                if (nodeId && isGreyEq) {
+                    if (!state.coolingUnits.some(u => u.equipmentId.toLowerCase() === nodeId.toLowerCase())) {
+                        let mappedType = nodeType;
+                        if (nodeType === 'CoolingTower' || nodeType.includes('Tower')) mappedType = 'Cooling Tower';
+                        else if (nodeType.includes('Chiller') || nodeId.startsWith('HE')) mappedType = 'Chiller';
+                        else if (nodeType === 'Pump-CS' || nodeType.includes('Constant')) mappedType = 'Pump-ConstantSpeed';
+                        else if (nodeType.includes('Pump') || nodeId.startsWith('PV') || nodeId.startsWith('CHP') || nodeId.startsWith('CWP')) mappedType = 'Pump-VariableSpeed';
+                        else if (nodeType.includes('HeatExchanger') || nodeType.includes('Exchanger')) mappedType = 'Heat Exchanger';
+                        else if (nodeType.includes('Cooler')) mappedType = 'Dry Cooler';
+
+                        state.coolingUnits.push({
+                            space: "Grey Space / 灰區",
+                            equipmentType: `${mappedType} / 冰水機`,
+                            equipmentId: nodeId,
+                            adjacentHotAisle: "-",
+                            model: "",
+                            specs: {}
+                        });
+                        addedCount++;
+                    }
+                }
+            });
+            
+            renderHvacInfo();
+            renderCoolingUnits();
+            renderIoTable();
+            renderOmParams();
+            saveLocalStorageDraft();
+            alert(`✅ HVAC Topology 上傳與解析成功！已自動同步 ${addedCount} 個灰區設備至 Cooling Units。`);
+        } else {
+            alert('⚠️ 上傳的 JSON 檔中未包含 nodes 或元件陣列資訊。請確認 JSON 結構。');
+        }
+    } catch(e) {
+        console.error(e);
+        alert('⚠️ HVAC JSON 格式無效，請確認檔案內容。');
+    }
+}
+
+function renderHvacInfo() {
+    const infoDiv = document.getElementById('hvacFileInfo');
+    const summaryDiv = document.getElementById('hvacParsedSummary');
+    if (!infoDiv) return;
+
+    if (!state.hvacJson) {
+        infoDiv.innerHTML = '';
+        if (summaryDiv) summaryDiv.innerHTML = '';
+        return;
+    }
+
+    const fileName = state.hvacFileName || 'hvac_system_config.json';
+    infoDiv.innerHTML = `
+        <div style="font-size:0.88rem; color:var(--success); background:#e3fcef; border:1px solid #abf5d1; padding:8px 12px; border-radius:4px; display:flex; align-items:center; justify-content:space-between;">
+            <span>📎 已載入 JSON 檔案: <strong>${fileName}</strong></span>
+            <button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:0.75rem;" onclick="clearHvacJson()">清除檔案</button>
+        </div>
+    `;
+
+    try {
+        const parsed = JSON.parse(state.hvacJson);
+        // 相容兩種來源：外部工具常見的 nodes 陣列，或本頁面內建 Diagram Builder 匯出的 components 陣列
+        const allNodes = Array.isArray(parsed.nodes) ? parsed.nodes
+                        : Array.isArray(parsed.components) ? parsed.components
+                        : null;
+        if (allNodes && summaryDiv) {
+            const greyNodes = allNodes.filter(n => 
+                ['Chiller', 'Pump', 'CoolingTower', 'HeatExchanger', 'Pump-VariableSpeed', 'Pump-ConstantSpeed'].includes(n.type) ||
+                (n.type && (n.type.includes('Chiller') || n.type.includes('Pump') || n.type.includes('Tower') || n.type.includes('Exchanger') || n.type.includes('Cooler')))
+            );
+            
+            summaryDiv.innerHTML = `
+                <div style="background:#fafbfc; border:1px solid var(--border-color); padding:1rem; border-radius:6px;">
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:8px;">📊 架構圖設備解析摘要 (共 ${greyNodes.length} 個設備節點)</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        ${greyNodes.map(n => `<span class="badge badge-info" style="font-size:0.8rem; padding:4px 10px;">${n.id} (${n.type || 'Equipment'})</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    } catch(e) {}
+}
+
+function clearHvacJson() {
+    const initialCount = state.coolingUnits.length;
+    state.coolingUnits = state.coolingUnits.filter(u => {
+        const isGrey = (u.space || '').includes('Grey') || (u.space || '').includes('灰區');
+        return !isGrey;
+    });
+    const removedCount = initialCount - state.coolingUnits.length;
+
+    state.hvacJson = "";
+    state.hvacFileName = "";
+    
+    renderHvacInfo();
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+    
+    if (removedCount > 0) {
+        alert(`ℹ️ 已清除 HVAC JSON，同時連動移除了 ${removedCount} 個由架構圖帶入的灰區設備。`);
+    } else {
+        alert(`ℹ️ 已清除 HVAC JSON 檔案設定。`);
+    }
+}
+
+// --- HVAC Diagram Builder 內嵌整合 ---
+// 內嵌的 Diagram Builder 完整原始碼是以隱藏的 <textarea> (RCDATA) 儲存於頁面中，
+// 這樣可以避免把整份 HTML/JS 塞進 JS 字串常值時，遇到反引號或巢狀 <script> 標籤造成解析錯誤。
+let hvacBuilderLoaded = false;
+let hvacBuilderLoading = false;
+
+function getHvacBuilderSourceHtml() {
+    const el = document.getElementById('hvac-builder-source');
+    return el ? el.value : '';
+}
+
+// 第一次切換到「HVAC Diagram」頁籤時才載入內嵌工具 (延遲載入，避免拖慢頁面初始開啟速度)。
+function ensureHvacBuilderLoaded() {
+    const iframe = document.getElementById('hvacBuilderFrame');
+    if (hvacBuilderLoaded || hvacBuilderLoading || !iframe) return;
+    hvacBuilderLoading = true;
+
+    iframe.addEventListener('load', function onFrameLoad() {
+        hvacBuilderLoaded = true;
+        hvacBuilderLoading = false;
+        if (state.hvacJson) {
+            try {
+                const parsed = JSON.parse(state.hvacJson);
+                if (parsed && Array.isArray(parsed.components) && Array.isArray(parsed.connections) &&
+                    iframe.contentWindow && typeof iframe.contentWindow.loadHvacBuilderData === 'function') {
+                    iframe.contentWindow.loadHvacBuilderData(parsed);
+                }
+            } catch (e) {
+                console.warn('目前的 HVAC JSON 與 Diagram Builder 格式不相容，改以空白畫布開始：', e);
+            }
+        }
+    }, { once: true });
+
+    iframe.srcdoc = getHvacBuilderSourceHtml();
+}
+
+// 將內嵌畫布上目前的架構圖，透過既有的 parseAndSyncHvacJson() 同步進本頁面
+function applyHvacBuilderDiagram() {
+    const iframe = document.getElementById('hvacBuilderFrame');
+    if (!hvacBuilderLoaded || !iframe.contentWindow || typeof iframe.contentWindow.getHvacBuilderData !== 'function') {
+        alert('⚠️ 繪圖工具尚未載入完成，請稍候再試一次。');
+        return;
+    }
+    const data = iframe.contentWindow.getHvacBuilderData();
+    if (!data || !Array.isArray(data.components) || data.components.length === 0) {
+        alert('⚠️ 目前繪圖區是空的，請先在畫布上新增至少一個元件，並完成連接後再套用。');
+        return;
+    }
+    const jsonStr = JSON.stringify(data);
+    const fileName = `📐 由 Diagram Builder 線上繪製 (${data.components.length} 個元件)`;
+    state.hvacJson = jsonStr;
+    state.hvacFileName = fileName;
+    parseAndSyncHvacJson(jsonStr, fileName);
+}
+
+// 「放大編輯區」：改用純 CSS 固定定位讓畫布容器覆蓋整個瀏覽器視窗
+let hvacEmbedFullscreen = false;
+
+function toggleHvacEmbedFullscreen() {
+    hvacEmbedFullscreen = !hvacEmbedFullscreen;
+    const wrap = document.getElementById('hvacBuilderFrameWrap');
+    const btn = document.getElementById('hvacFullscreenBtn');
+    if (!wrap || !btn) return;
+    wrap.classList.toggle('is-pseudo-fullscreen', hvacEmbedFullscreen);
+    document.body.classList.toggle('hvac-fullscreen-active', hvacEmbedFullscreen);
+    btn.innerHTML = hvacEmbedFullscreen ? '退出放大模式' : '放大編輯區';
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && hvacEmbedFullscreen) {
+        toggleHvacEmbedFullscreen();
+    }
+});
+
+// --- 4. COOLING UNITS ---
+function switchCoolingSpecTab(tab, btnElem) {
+    state.activeCoolingSpecTab = tab;
+    document.querySelectorAll('#coolingSpecSubNav .sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElem) btnElem.classList.add('active');
+    renderCoolingSpecs();
+}
+
+function getPrefixForEquipmentType(eqType) {
+    if (!eqType) return 'RC';
+    const typeStr = eqType.split(' / ')[0].trim();
+    if (typeStr.startsWith('Row Cool') || typeStr.startsWith('RowCool')) return 'RC';
+    if (typeStr.startsWith('CRAC') || typeStr.startsWith('CRAH')) return 'AC';
+    if (typeStr.startsWith('AALC')) return 'AALC';
+    if (typeStr.startsWith('L2A')) return 'L2A';
+    if (typeStr.startsWith('L2L')) return 'L2L';
+    if (typeStr.startsWith('Pump-ConstantSpeed')) return 'CHP_';
+    if (typeStr.startsWith('Pump-VariableSpeed')) return 'CWP_';
+    if (typeStr.startsWith('Chiller')) return 'HE_';
+    if (typeStr.startsWith('Cooling Tower')) return 'CT_';
+    if (typeStr.startsWith('Dry Cooler')) return 'DC_';
+    if (typeStr.startsWith('Heat Exchanger')) return 'HE_';
+    return 'RC';
+}
+
+function generateDefaultEquipmentId(eqType, isGrey, currentIdx = null) {
+    if (isGrey) {
+        if (state.hvacJson) {
+            try {
+                const parsed = JSON.parse(state.hvacJson);
+                const nodesArr = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.components || parsed.elements || []);
+                if (nodesArr.length > 0) {
+                    const prefix = getPrefixForEquipmentType(eqType);
+                    const matchedNodes = nodesArr.filter(n => {
+                        const nid = n.id || n.name || '';
+                        const nt = n.type || n.category || '';
+                        return nid && (nid.startsWith(prefix) || nt === eqType.split(' / ')[0] || nt.includes(prefix));
+                    });
+                    for (const node of matchedNodes) {
+                        const nId = node.id || node.name;
+                        const taken = state.coolingUnits.some((u, idx) => idx !== currentIdx && u.equipmentId.toLowerCase() === nId.toLowerCase());
+                        if (!taken) return nId;
+                    }
+                }
+            } catch(e) {}
+        }
+        const prefix = getPrefixForEquipmentType(eqType);
+        let baseCandidate = 'GREY_01';
+        if (prefix === 'CHP_') baseCandidate = 'CHP_01';
+        else if (prefix === 'CWP_') baseCandidate = 'CWP_01';
+        else if (prefix === 'HE_') baseCandidate = eqType.includes('Chiller') ? 'HE_03' : 'HE_05';
+        else if (prefix === 'CT_') baseCandidate = 'CT_125';
+        else if (prefix === 'DC_') baseCandidate = 'DC_02';
+        
+        let candidate = baseCandidate;
+        let counter = 1;
+        while (state.coolingUnits.some((u, idx) => idx !== currentIdx && u.equipmentId.toLowerCase() === candidate.toLowerCase())) {
+            counter++;
+            candidate = `${prefix}${String(counter).padStart(2, '0')}`;
+        }
+        return candidate;
+    }
+
+    const prefix = getPrefixForEquipmentType(eqType);
+    let count = 1;
+    state.coolingUnits.forEach((u, idx) => {
+        if (idx !== currentIdx && u.equipmentId && u.equipmentId.startsWith(prefix)) {
+            const numPart = parseInt(u.equipmentId.replace(prefix, ''), 10);
+            if (!isNaN(numPart) && numPart >= count) {
+                count = numPart + 1;
+            }
+        }
+    });
+
+    let candidate = `${prefix}${String(count).padStart(2, '0')}`;
+    while (state.coolingUnits.some((u, idx) => idx !== currentIdx && u.equipmentId.toLowerCase() === candidate.toLowerCase())) {
+        count++;
+        candidate = `${prefix}${String(count).padStart(2, '0')}`;
+    }
+    return candidate;
+}
+
+function renderCoolingUnits() {
+    const tbody = document.getElementById('coolingUnitsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    state.coolingUnits.forEach((u, idx) => {
+        const isGrey = (u.space || '').includes('Grey') || (u.space || '').includes('灰區');
+        const currentOptions = isGrey ? GRAY_SPACE_EQUIPMENT : WHITE_SPACE_EQUIPMENT;
+
+        let selectedType = u.equipmentType || '';
+        const matchType = currentOptions.find(opt => opt === selectedType || opt.startsWith(selectedType) || selectedType.startsWith(opt.split(' / ')[0]));
+        if (matchType) {
+            selectedType = matchType;
+            u.equipmentType = matchType;
+        }
+
+        const roomOptions = state.rooms.map(r => r.roomId);
+        if (!isGrey && !u.roomId && roomOptions.length > 0) {
+            u.roomId = roomOptions[0];
+        }
+
+        const currentRoomZones = getZonesForRoomId(u.roomId);
+
+        if (!u.equipmentId) {
+            u.equipmentId = generateDefaultEquipmentId(u.equipmentType, isGrey, idx);
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <select class="form-control" onchange="updateCoolingSpace(${idx}, this.value)">
+                    <option value="White Space / 白區" ${!isGrey ? 'selected' : ''}>White Space / 白區</option>
+                    <option value="Grey Space / 灰區" ${isGrey ? 'selected' : ''}>Grey Space / 灰區</option>
+                </select>
+            </td>
+            <td>
+                <select class="form-control" ${isGrey ? 'disabled style="background:#f4f5f7;"' : ''} onchange="updateCoolingRoom(${idx}, this.value)">
+                    ${isGrey ? '<option value="-">-</option>' : roomOptions.map(rId => `<option value="${rId}" ${u.roomId === rId ? 'selected' : ''}>${rId}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="form-control" ${isGrey ? 'disabled style="background:#f4f5f7;"' : ''} onchange="updateCoolingZone(${idx}, this.value)">
+                    ${isGrey ? '<option value="-">-</option>' : currentRoomZones.map(z => `<option value="${z.zoneId}" ${(u.zoneId === z.zoneId || (u.adjacentHotAisle && u.adjacentHotAisle.includes(z.zoneId))) ? 'selected' : ''}>Hot Aisle ${z.zoneId} (Zone ${z.zoneId})</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="form-control" onchange="updateCoolingType(${idx}, this.value)">
+                    ${currentOptions.map(opt => `<option value="${opt}" ${selectedType === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>
+            </td>
+            <td><input type="text" class="form-control" value="${u.equipmentId || ''}" onchange="updateCooling(${idx}, 'equipmentId', this.value)"></td>
+            <td><input type="text" class="form-control" placeholder="品牌+型號" value="${u.model || ''}" onchange="updateCooling(${idx}, 'model', this.value)"></td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-outline btn-sm" onclick="moveCoolingUnit(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} style="padding:1px 6px;" title="上移">▲</button>
+                <button class="btn btn-outline btn-sm" onclick="moveCoolingUnit(${idx}, 1)" ${idx === state.coolingUnits.length - 1 ? 'disabled' : ''} style="padding:1px 6px;" title="下移">▼</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteCooling(${idx})" style="padding:1px 8px;">刪除</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    renderCoolingSpecs();
+}
+
+function moveCoolingUnit(idx, direction) {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= state.coolingUnits.length) return;
+
+    const temp = state.coolingUnits[idx];
+    state.coolingUnits[idx] = state.coolingUnits[targetIdx];
+    state.coolingUnits[targetIdx] = temp;
+
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function getZonesForRoomId(roomId) {
+    const room = state.rooms.find(r => r.roomId === roomId) || state.rooms[0];
+    return room ? room.zones : [{ zoneId: 'A' }];
+}
+
+function updateCoolingSpace(idx, spaceVal) {
+    const isGrey = spaceVal.includes('Grey') || spaceVal.includes('灰區');
+    state.coolingUnits[idx].space = spaceVal;
+    
+    if (isGrey) {
+        state.coolingUnits[idx].equipmentType = GRAY_SPACE_EQUIPMENT[0];
+        state.coolingUnits[idx].roomId = "-";
+        state.coolingUnits[idx].zoneId = "-";
+        state.coolingUnits[idx].adjacentHotAisle = "-";
+        state.coolingUnits[idx].equipmentId = generateDefaultEquipmentId(GRAY_SPACE_EQUIPMENT[0], true, idx);
+    } else {
+        state.coolingUnits[idx].equipmentType = WHITE_SPACE_EQUIPMENT[0];
+        state.coolingUnits[idx].roomId = state.rooms[0] ? state.rooms[0].roomId : "R1";
+        const firstZone = getZonesForRoomId(state.coolingUnits[idx].roomId)[0];
+        state.coolingUnits[idx].zoneId = firstZone ? firstZone.zoneId : "A";
+        state.coolingUnits[idx].adjacentHotAisle = `Hot Aisle ${firstZone ? firstZone.zoneId : 'A'}`;
+        state.coolingUnits[idx].equipmentId = generateDefaultEquipmentId(WHITE_SPACE_EQUIPMENT[0], false, idx);
+    }
+    
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function updateCoolingType(idx, typeVal) {
+    const unit = state.coolingUnits[idx];
+    const isGrey = (unit.space || '').includes('Grey') || (unit.space || '').includes('灰區');
+    unit.equipmentType = typeVal;
+    unit.equipmentId = generateDefaultEquipmentId(typeVal, isGrey, idx);
+    
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function updateCoolingRoom(idx, roomIdVal) {
+    state.coolingUnits[idx].roomId = roomIdVal;
+    const zones = getZonesForRoomId(roomIdVal);
+    if (zones.length > 0) {
+        state.coolingUnits[idx].zoneId = zones[0].zoneId;
+        state.coolingUnits[idx].adjacentHotAisle = `Hot Aisle ${zones[0].zoneId}`;
+    }
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function updateCoolingZone(idx, zoneIdVal) {
+    state.coolingUnits[idx].zoneId = zoneIdVal;
+    state.coolingUnits[idx].adjacentHotAisle = `Hot Aisle ${zoneIdVal}`;
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function updateCooling(idx, field, val) {
+    if (field === 'equipmentId') {
+        let curVal = String(val).trim();
+        const isDuplicate = state.coolingUnits.some((u, i) => i !== idx && u.equipmentId.toLowerCase() === curVal.toLowerCase());
+        if (isDuplicate) {
+            alert(`⚠️ 錯誤：Equipment ID "${curVal}" 已被使用，請直接於輸入框中修改為唯一的 ID。`);
+            renderCoolingUnits();
+            return;
+        }
+        state.coolingUnits[idx].equipmentId = curVal;
+    } else {
+        state.coolingUnits[idx][field] = val;
+    }
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function addCoolingUnit() {
+    const firstRoomId = state.rooms[0] ? state.rooms[0].roomId : "R1";
+    const firstZone = getZonesForRoomId(firstRoomId)[0];
+    const firstZoneId = firstZone ? firstZone.zoneId : "A";
+    const defaultType = WHITE_SPACE_EQUIPMENT[0];
+    const defaultId = generateDefaultEquipmentId(defaultType, false);
+
+    state.coolingUnits.push({
+        space: "White Space / 白區",
+        roomId: firstRoomId,
+        zoneId: firstZoneId,
+        equipmentType: defaultType,
+        equipmentId: defaultId,
+        adjacentHotAisle: `Hot Aisle ${firstZoneId}`,
+        model: "",
+        specs: {}
+    });
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function deleteCooling(idx) {
+    state.coolingUnits.splice(idx, 1);
+    renderCoolingUnits();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function renderCoolingSpecs() {
+    const container = document.getElementById('coolingSpecForms');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const currentTab = state.activeCoolingSpecTab || 'white';
+
+    if (currentTab === 'white') {
+        renderWhiteSpaceMatrixView(container);
+    } else {
+        renderGreySpaceMatrixView(container);
+    }
+}
+
+function renderWhiteSpaceMatrixView(container) {
+    const whiteUnits = state.coolingUnits.filter(u => !u.space.includes('Grey') && !u.space.includes('灰區'));
+
+    if (whiteUnits.length === 0) {
+        container.innerHTML = '<div class="notice-box" style="margin-top:1rem;">❄️ 目前尚未新增白區冷卻設備。請於上方「冷卻設備列表」新增 White Space 設備。</div>';
+        return;
+    }
+
+    state.rooms.forEach(room => {
+        const roomUnits = whiteUnits.filter(u => (u.roomId === room.roomId) || (!u.roomId && room.roomId === state.rooms[0].roomId));
+        if (roomUnits.length === 0) return;
+
+        const typeGroups = {};
+        roomUnits.forEach(u => {
+            const baseKey = (u.equipmentType || '').split(' / ')[0].trim();
+            if (!typeGroups[baseKey]) typeGroups[baseKey] = [];
+            typeGroups[baseKey].push(u);
+        });
+
+        const roomDiv = document.createElement('div');
+        roomDiv.style.marginBottom = '2rem';
+
+        let groupsHtml = '';
+        for (const [baseKey, units] of Object.entries(typeGroups)) {
+            const schema = COOLING_SPEC_DICT[baseKey] || COOLING_SPEC_DICT[units[0].equipmentType] || [];
+            if (schema.length === 0) continue;
+
+            groupsHtml += '<div style="background:#ffffff; border:1px solid var(--border-color); border-radius:6px; margin-top:1rem; padding:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.03);">';
+            groupsHtml += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
+            groupsHtml += '<div style="font-weight:700; color:var(--primary); font-size:1rem;">📋 設備類型群組: ' + baseKey + ' <span style="font-weight:normal; color:var(--text-muted);">(' + units.length + ' 台設備)</span></div>';
+            groupsHtml += '</div>';
+            groupsHtml += '<div style="overflow-x:auto; width:100%;">';
+            groupsHtml += '<table class="data-table" style="min-width: 900px;">';
+            groupsHtml += '<thead><tr>';
+            groupsHtml += '<th style="min-width:100px;">Equipment ID</th>';
+            groupsHtml += '<th style="min-width:100px;">Zone ID</th>';
+            groupsHtml += '<th style="min-width:120px;">Model / 型號</th>';
+            schema.forEach(item => {
+                groupsHtml += '<th style="min-width:180px;" title="' + item.label + '">' + item.label + '</th>';
+            });
+            groupsHtml += '</tr></thead><tbody>';
+
+            units.forEach(u => {
+                groupsHtml += '<tr>';
+                groupsHtml += '<td><strong>' + u.equipmentId + '</strong></td>';
+                groupsHtml += '<td>' + (u.zoneId || '-') + '</td>';
+                groupsHtml += '<td>' + (u.model || '-') + '</td>';
+                schema.forEach(item => {
+                    const hasVal = u.specs && u.specs[item.key] !== undefined;
+                    const val = hasVal ? u.specs[item.key] : (item.default !== '' ? item.default : '');
+                    const placeholder = item.default !== '' && item.default !== undefined ? item.default : '';
+                    const isText = item.key.toLowerCase().includes('type');
+                    const inputType = isText ? 'text' : 'number';
+                    const stepAttr = isText ? '' : 'step="any"';
+                    groupsHtml += `<td><input type="${inputType}" ${stepAttr} class="form-control" style="width:100%; padding:4px 8px;" placeholder="${placeholder}" value="${val}" onchange="updateCoolingSpec('${u.equipmentId}', '${item.key}', this.value)"></td>`;
+                });
+                groupsHtml += '</tr>';
+            });
+
+            groupsHtml += '</tbody></table></div></div>';
+        }
+
+        roomDiv.innerHTML = '<div style="background:#ebf0ff; padding:10px 16px; border-radius:6px; font-weight:700; color:var(--primary); font-size:1.05rem; display:flex; align-items:center; justify-content:space-between; border:1px solid #cce0ff;"><span>🏢 Room: ' + room.roomId + ' (' + room.roomName + ')</span><span class="badge badge-info">' + (room.scenario || '機房') + '</span></div><div>' + groupsHtml + '</div>';
+        container.appendChild(roomDiv);
+    });
+}
+
+function renderGreySpaceMatrixView(container) {
+    const greyUnits = state.coolingUnits.filter(u => u.space.includes('Grey') || u.space.includes('灰區'));
+
+    if (greyUnits.length === 0) {
+        container.innerHTML = '<div class="notice-box" style="margin-top:1rem;">🏭 目前尚未新增灰區冷卻設備。請於上方「冷卻設備列表」或透過 HVAC Diagram 新增 Grey Space 設備。</div>';
+        return;
+    }
+
+    const typeGroups = {};
+    greyUnits.forEach(u => {
+        const baseKey = (u.equipmentType || '').split(' / ')[0].trim();
+        if (!typeGroups[baseKey]) typeGroups[baseKey] = [];
+        typeGroups[baseKey].push(u);
+    });
+
+    let groupsHtml = '';
+    for (const [baseKey, units] of Object.entries(typeGroups)) {
+        const schema = COOLING_SPEC_DICT[baseKey] || COOLING_SPEC_DICT[units[0].equipmentType] || [];
+        if (schema.length === 0) continue;
+
+        groupsHtml += '<div style="background:#ffffff; border:1px solid var(--border-color); border-radius:6px; margin-top:1rem; padding:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.03);">';
+        groupsHtml += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
+        groupsHtml += '<div style="font-weight:700; color:var(--primary); font-size:1rem;">🏭 灰區設備群組: ' + baseKey + ' <span style="font-weight:normal; color:var(--text-muted);">(' + units.length + ' 台設備)</span></div>';
+        groupsHtml += '</div>';
+        groupsHtml += '<div style="overflow-x:auto; width:100%;">';
+        groupsHtml += '<table class="data-table" style="min-width: 900px;">';
+        groupsHtml += '<thead><tr>';
+        groupsHtml += '<th style="min-width:120px;">Equipment ID</th>';
+        groupsHtml += '<th style="min-width:120px;">Model / 型號</th>';
+        schema.forEach(item => {
+            groupsHtml += '<th style="min-width:180px;" title="' + item.label + '">' + item.label + '</th>';
+        });
+        groupsHtml += '</tr></thead><tbody>';
+
+        units.forEach(u => {
+            groupsHtml += '<tr>';
+            groupsHtml += '<td><strong>' + u.equipmentId + '</strong></td>';
+            groupsHtml += '<td>' + (u.model || '-') + '</td>';
+            schema.forEach(item => {
+                const hasVal = u.specs && u.specs[item.key] !== undefined;
+                const val = hasVal ? u.specs[item.key] : (item.default !== '' ? item.default : '');
+                const placeholder = item.default !== '' && item.default !== undefined ? item.default : '';
+                const isText = item.key.toLowerCase().includes('type');
+                const inputType = isText ? 'text' : 'number';
+                const stepAttr = isText ? '' : 'step="any"';
+                groupsHtml += `<td><input type="${inputType}" ${stepAttr} class="form-control" style="width:100%; padding:4px 8px;" placeholder="${placeholder}" value="${val}" onchange="updateCoolingSpec('${u.equipmentId}', '${item.key}', this.value)"></td>`;
+            });
+            groupsHtml += '</tr>';
+        });
+
+        groupsHtml += '</tbody></table></div></div>';
+    }
+
+    container.innerHTML = '<div style="background:#f4f5f7; padding:10px 16px; border-radius:6px; font-weight:700; color:var(--text-main); font-size:1.05rem; margin-bottom:12px; border:1px solid var(--border-color);">🏭 灰區中央水路與冰水主機設備 (Site Level Equipment - 共 ' + greyUnits.length + ' 台)</div><div>' + groupsHtml + '</div>';
+}
+
+function updateCoolingSpec(eqId, key, val) {
+    const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
+    if (u) {
+        if (!u.specs) u.specs = {};
+        u.specs[key] = val;
+        saveLocalStorageDraft();
+    }
+}
+
+// --- 5. RACK SURVEY ---
+function renderRackSurvey() {
+    const tbody = document.getElementById('rackTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    state.racks.forEach((r, idx) => {
+        const computedRackId = `${r.zoneId}-R${r.rackNo}`;
+        const isHighDensity = r.powerCapacityKw >= 20;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align:center;"><input type="checkbox" class="rack-checkbox" data-index="${idx}" onchange="updateRackSelection()"></td>
+            <td>
+                <select class="form-control" onchange="updateRack(${idx}, 'roomId', this.value)">
+                    ${state.rooms.map(rm => `<option ${r.roomId === rm.roomId ? 'selected' : ''}>${rm.roomId}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="form-control" onchange="updateRack(${idx}, 'zoneId', this.value)">
+                    ${getZoneOptionsForRoom(r.roomId).map(z => `<option ${r.zoneId === z ? 'selected' : ''}>${z}</option>`).join('')}
+                </select>
+            </td>
+            <td><input type="number" class="form-control" value="${r.rackNo}" onchange="updateRack(${idx}, 'rackNo', Number(this.value))"></td>
+            <td><input type="number" class="form-control" value="${r.powerCapacityKw}" onchange="updateRack(${idx}, 'powerCapacityKw', Number(this.value))"></td>
+            <td><strong>${computedRackId}</strong></td>
+            <td>${isHighDensity ? '<span class="badge badge-danger">V (High Density)</span>' : '<span style="color:#aaa;">-</span>'}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-outline btn-sm" onclick="duplicateRack(${idx})" style="padding:2px 6px; font-size:0.75rem;" title="複製單筆">📋</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteRack(${idx})" style="padding:2px 6px; font-size:0.75rem;">刪除</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    updateRackSelection();
+}
+
+function getZoneOptionsForRoom(roomId) {
+    const room = state.rooms.find(r => r.roomId === roomId);
+    return room ? room.zones.map(z => z.zoneId) : ['A'];
+}
+
+function updateRack(idx, field, val) {
+    const tempRack = { ...state.racks[idx], [field]: val };
+    const computedRackId = `${tempRack.zoneId}-R${tempRack.rackNo}`;
+    const isDuplicate = state.racks.some((r, i) => i !== idx && `${r.zoneId}-R${r.rackNo}`.toLowerCase() === computedRackId.toLowerCase());
+
+    if (isDuplicate) {
+        alert(`⚠️ 警告：Rack ID "${computedRackId}" 已存在，請直接在介面表格中調整 Zone 或 Rack No.！`);
+        renderRackSurvey();
+        return;
+    }
+
+    state.racks[idx][field] = val;
+    renderRackSurvey();
+    renderSensorsList();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function addRackRow() {
+    const firstRoom = state.rooms[0] ? state.rooms[0].roomId : "R1";
+    const firstZone = getZoneOptionsForRoom(firstRoom)[0] || "A";
+    
+    let nextNo = 1;
+    while (state.racks.some(r => `${r.zoneId}-R${r.rackNo}`.toLowerCase() === `${firstZone}-R${nextNo}`.toLowerCase())) {
+        nextNo++;
+    }
+
+    state.racks.push({ roomId: firstRoom, zoneId: firstZone, rackNo: nextNo, powerCapacityKw: 20 });
+    renderRackSurvey();
+    renderSensorsList();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function deleteRack(idx) {
+    state.racks.splice(idx, 1);
+    renderRackSurvey();
+    renderSensorsList();
+    renderIoTable();
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function duplicateRack(idx) {
+    const source = state.racks[idx];
+    if (!source) return;
+
+    let nextNo = 1;
+    while (state.racks.some(r => `${r.zoneId}-R${r.rackNo}`.toLowerCase() === `${source.zoneId}-R${nextNo}`.toLowerCase())) {
+        nextNo++;
+    }
+
+    const cloned = {
+        roomId: source.roomId,
+        zoneId: source.zoneId,
+        rackNo: nextNo,
+        powerCapacityKw: source.powerCapacityKw
+    };
+
+    state.racks.splice(idx + 1, 0, cloned);
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+function openBatchRackModal() {
+    const roomSel = document.getElementById('batchRoomSelect');
+    if (roomSel) {
+        roomSel.innerHTML = state.rooms.map(r => `<option>${r.roomId}</option>`).join('');
+    }
+    updateBatchZoneOptions();
+    const modal = document.getElementById('batchRackModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeBatchRackModal() {
+    const modal = document.getElementById('batchRackModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateBatchZoneOptions() {
+    const selectedRoom = document.getElementById('batchRoomSelect').value;
+    const zoneSel = document.getElementById('batchZoneSelect');
+    if (zoneSel) {
+        zoneSel.innerHTML = getZoneOptionsForRoom(selectedRoom).map(z => `<option>${z}</option>`).join('');
+    }
+}
+
+function executeBatchRack() {
+    const roomId = document.getElementById('batchRoomSelect').value;
+    const zoneId = document.getElementById('batchZoneSelect').value;
+    const count = Number(document.getElementById('batchCount').value);
+    const power = Number(document.getElementById('batchPower').value);
+
+    for (let i = 1; i <= count; i++) {
+        let nextNo = 1;
+        while (state.racks.some(r => `${r.zoneId}-R${r.rackNo}`.toLowerCase() === `${zoneId}-R${nextNo}`.toLowerCase())) {
+            nextNo++;
+        }
+        state.racks.push({ roomId, zoneId, rackNo: nextNo, powerCapacityKw: power });
+    }
+
+    closeBatchRackModal();
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+function toggleSelectAllRacks(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.rack-checkbox');
+    checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    updateRackSelection();
+}
+
+function updateRackSelection() {
+    const checkboxes = document.querySelectorAll('.rack-checkbox');
+    const checked = document.querySelectorAll('.rack-checkbox:checked');
+    const countSpan = document.getElementById('selectedRackCount');
+    if (countSpan) {
+        countSpan.innerText = `已選取 ${checked.length} / ${checkboxes.length} 項`;
+    }
+}
+
+function getSelectedRackIndices() {
+    const checked = document.querySelectorAll('.rack-checkbox:checked');
+    return Array.from(checked).map(cb => Number(cb.getAttribute('data-index')));
+}
+
+function batchDuplicateRacks() {
+    const indices = getSelectedRackIndices();
+    if (indices.length === 0) {
+        alert('⚠️ 請先勾選要複製的機櫃項目！');
+        return;
+    }
+
+    indices.sort((a,b) => b - a).forEach(idx => {
+        const source = state.racks[idx];
+        if (!source) return;
+
+        let nextNo = 1;
+        while (state.racks.some(r => `${r.zoneId}-R${r.rackNo}`.toLowerCase() === `${source.zoneId}-R${nextNo}`.toLowerCase())) {
+            nextNo++;
+        }
+
+        const cloned = {
+            roomId: source.roomId,
+            zoneId: source.zoneId,
+            rackNo: nextNo,
+            powerCapacityKw: source.powerCapacityKw
+        };
+        state.racks.splice(idx + 1, 0, cloned);
+    });
+
+    renderAll();
+    saveLocalStorageDraft();
+    alert(`✅ 成功批量複製 ${indices.length} 項機櫃！`);
+}
+
+function batchDeleteRacks() {
+    const indices = getSelectedRackIndices();
+    if (indices.length === 0) {
+        alert('⚠️ 請先選取要刪除的機櫃！');
+        return;
+    }
+
+    if (!confirm(`確定要刪除選取的 ${indices.length} 台機櫃嗎？`)) return;
+
+    indices.sort((a, b) => b - a).forEach(idx => {
+        state.racks.splice(idx, 1);
+    });
+
+    renderAll();
+    saveLocalStorageDraft();
+}
+
+// --- 6. SENSORS LIST ---
+function getSensorPrefix(sType) {
+    if (!sType) return 'TS';
+    if (sType.includes('Humidity') && sType.includes('Temperature')) return 'THS';
+    if (sType.includes('Temp/Humidity') || sType.includes('Temperature & Humidity')) return 'THS';
+    if (sType.includes('Humidity')) return 'HS';
+    if (sType.includes('Temperature')) return 'TS';
+    return 'TS';
+}
+
+function generateNextSensorId(sType) {
+    const prefix = getSensorPrefix(sType);
+    let maxNum = 0;
+    state.sensors.forEach(s => {
+        if (s.sensorId && s.sensorId.startsWith(prefix + '-')) {
+            const numPart = parseInt(s.sensorId.replace(prefix + '-', ''), 10);
+            if (!isNaN(numPart) && numPart > maxNum) {
+                maxNum = numPart;
+            }
+        }
+    });
+    let candidate = `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+    let counter = maxNum + 1;
+    while (state.sensors.some(s => s.sensorId.toLowerCase() === candidate.toLowerCase())) {
+        counter++;
+        candidate = `${prefix}-${String(counter).padStart(3, '0')}`;
+    }
+    return candidate;
+}
+
+function updateSensorType(idx, sType) {
+    state.sensors[idx].sensorType = sType;
+    state.sensors[idx].sensorId = generateNextSensorId(sType);
+    renderSensorsList();
+    renderIoTable();
+    saveLocalStorageDraft();
+}
+
+function renderSensorsList() {
+    const tbody = document.getElementById('sensorTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const availableRackIds = state.racks.map(r => `${r.zoneId}-R${r.rackNo}`);
+
+    state.sensors.forEach((s, idx) => {
+        const isRackAttached = s.attachment === 'Rack';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <select class="form-control" onchange="updateSensorType(${idx}, this.value)">
+                    <option value="Temperature Sensor" ${s.sensorType === 'Temperature Sensor' ? 'selected' : ''}>Temperature Sensor</option>
+                    <option value="Humidity Sensor" ${s.sensorType === 'Humidity Sensor' ? 'selected' : ''}>Humidity Sensor</option>
+                    <option value="Temperature & Humidity Sensor" ${s.sensorType === 'Temperature & Humidity Sensor' || s.sensorType === 'Temp/Humidity Sensor' ? 'selected' : ''}>Temperature & Humidity Sensor</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control" value="${s.sensorId}" onchange="updateSensor(${idx}, 'sensorId', this.value)"></td>
+            <td>
+                <select class="form-control" onchange="updateSensor(${idx}, 'attachment', this.value)">
+                    <option ${s.attachment === 'Rack' ? 'selected' : ''}>Rack</option>
+                    <option ${s.attachment === 'Cold Aisle' ? 'selected' : ''}>Cold Aisle</option>
+                    <option ${s.attachment === 'Hot Aisle' ? 'selected' : ''}>Hot Aisle</option>
+                </select>
+            </td>
+            <td>
+                <select class="form-control" ${!isRackAttached ? 'disabled' : ''} onchange="updateSensor(${idx}, 'rackId', this.value)">
+                    ${availableRackIds.map(rk => `<option ${s.rackId === rk ? 'selected' : ''}>${rk}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="form-control" ${!isRackAttached ? 'disabled' : ''} onchange="updateSensor(${idx}, 'inletOrOutlet', this.value)">
+                    <option ${s.inletOrOutlet === 'Air Outlet' ? 'selected' : ''}>Air Outlet</option>
+                    <option ${s.inletOrOutlet === 'Air Inlet' ? 'selected' : ''}>Air Inlet</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control" value="${s.remarks}" onchange="updateSensor(${idx}, 'remarks', this.value)"></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteSensor(${idx})">刪除</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateSensor(idx, field, val) {
+    if (field === 'sensorId') {
+        let curVal = String(val).trim();
+        const isDuplicate = state.sensors.some((s, i) => i !== idx && s.sensorId.toLowerCase() === curVal.toLowerCase());
+        if (isDuplicate) {
+            alert(`⚠️ 錯誤：Sensor ID "${curVal}" 已存在，請直接於輸入框中修改為唯一的 Sensor ID。`);
+            renderSensorsList();
+            return;
+        }
+        state.sensors[idx].sensorId = curVal;
+    } else {
+        state.sensors[idx][field] = val;
+    }
+    renderSensorsList();
+    renderIoTable();
+    saveLocalStorageDraft();
+}
+
+function addSensorRow() {
+    const defaultType = "Temperature Sensor";
+    const nextId = generateNextSensorId(defaultType);
+    const firstRack = state.racks[0] ? `${state.racks[0].zoneId}-R${state.racks[0].rackNo}` : "A-R1";
+    
+    state.sensors.push({ 
+        sensorType: defaultType, 
+        sensorId: nextId, 
+        attachment: "Rack", 
+        rackId: firstRack, 
+        inletOrOutlet: "Air Outlet", 
+        remarks: "" 
+    });
+    renderSensorsList();
+    renderIoTable();
+    saveLocalStorageDraft();
+}
+
+function deleteSensor(idx) {
+    state.sensors.splice(idx, 1);
+    renderSensorsList();
+    renderIoTable();
+    saveLocalStorageDraft();
+}
+
+function autoGenerateRackSensors() {
+    if (state.racks.length === 0) {
+        alert('⚠️ 請先至 Rack Survey 新增機櫃！');
+        return;
+    }
+
+    let addedCount = 0;
+    const tempType = "Temperature Sensor";
+    const humType = "Humidity Sensor";
+
+    // 1. 為每個機櫃產生前後門溫度感測器
+    state.racks.forEach(r => {
+        const rackId = `${r.zoneId}-R${r.rackNo}`;
+        
+        const hasOutlet = state.sensors.some(s => s.attachment === 'Rack' && s.rackId === rackId && s.inletOrOutlet === 'Air Outlet');
+        if (!hasOutlet) {
+            state.sensors.push({
+                sensorType: tempType,
+                sensorId: generateNextSensorId(tempType),
+                attachment: "Rack",
+                rackId: rackId,
+                inletOrOutlet: "Air Outlet",
+                remarks: "機櫃出風口"
+            });
+            addedCount++;
+        }
+
+        const hasInlet = state.sensors.some(s => s.attachment === 'Rack' && s.rackId === rackId && s.inletOrOutlet === 'Air Inlet');
+        if (!hasInlet) {
+            state.sensors.push({
+                sensorType: tempType,
+                sensorId: generateNextSensorId(tempType),
+                attachment: "Rack",
+                rackId: rackId,
+                inletOrOutlet: "Air Inlet",
+                remarks: "機櫃入風口"
+            });
+            addedCount++;
+        }
+    });
+
+    // 2. 為每個存在機櫃的 Zone 自動產生通道 (Aisle) 感測器
+    const uniqueZones = [...new Set(state.racks.map(r => r.zoneId))];
+    uniqueZones.forEach(zId => {
+        const firstRack = state.racks.find(r => r.zoneId === zId);
+        const placeholderRackId = firstRack ? `${firstRack.zoneId}-R${firstRack.rackNo}` : "A-R1";
+
+        const aisleSensorsToAdd = [
+            { type: tempType, attachment: "Cold Aisle" },
+            { type: humType, attachment: "Cold Aisle" },
+            { type: tempType, attachment: "Hot Aisle" },
+            { type: humType, attachment: "Hot Aisle" }
+        ];
+
+        aisleSensorsToAdd.forEach(def => {
+            const exists = state.sensors.some(s => 
+                s.attachment === def.attachment && 
+                s.sensorType === def.type && 
+                s.rackId && 
+                s.rackId.startsWith(zId + '-')
+            );
+            
+            if (!exists) {
+                state.sensors.push({
+                    sensorType: def.type,
+                    sensorId: generateNextSensorId(def.type),
+                    attachment: def.attachment,
+                    rackId: placeholderRackId, 
+                    inletOrOutlet: "Air Outlet",
+                    remarks: ""
+                });
+                addedCount++;
+            }
+        });
+    });
+
+    if (addedCount > 0) {
+        alert(`✅ 成功為缺少感測器的區域自動補上標準機櫃與冷熱通道感測器 (新增 ${addedCount} 筆)！\n已保留既有感測器。`);
+    } else {
+        alert('ℹ️ 所有標準感測器皆已配置，未有重複新增。');
+    }
+
+    renderSensorsList();
+    renderIoTable();
+    saveLocalStorageDraft();
+}
+
+// --- 7. I/O TABLE ---
+function switchIoTab(tab, btnElem) {
+    state.activeIoTab = tab;
+    document.querySelectorAll('#io-table .sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElem) btnElem.classList.add('active');
+    renderIoTable();
+}
+
+const STANDARD_WHITE_COOLING_POINTS = [
+    { dataPoint: "Power Consumption / 消耗功率", unit: "kW" },
+    { dataPoint: "Outlet Air Temperature Setpoint / 出風溫度設定", unit: "°C" },
+    { dataPoint: "Chilled Water Inlet Temperature / 冰水入水溫度", unit: "°C" },
+    { dataPoint: "Chilled Water Inlet Flow Rate / 冰水入水流速", unit: "lpm" },
+    { dataPoint: "Chilled Water Outlet Temperature / 冰水出水溫度", unit: "°C" },
+    { dataPoint: "Chilled Water Outlet Flow Rate / 冰水出水流速", unit: "lpm" },
+    { dataPoint: "Minimum Speed Setpoint / 最低轉速設定值", unit: "%" },
+    { dataPoint: "Inlet Air Temperature / 入風溫度", unit: "°C" },
+    { dataPoint: "Fan Speed Setpoint / 風扇轉速設定值", unit: "%" },
+    { dataPoint: "Outlet Air Temperature / 出風溫度", unit: "°C" }
+];
+
+const CHILLER_IO_POINTS = [
+    { dataPoint: "Power Consumption / 消耗功率", unit: "kW or A" },
+    { dataPoint: "Chilled Water Outlet Temperature Setpoint / 冰水出水溫度設定", unit: "°C" },
+    { dataPoint: "Chilled Water Outlet Temperature / 冰水出水溫度", unit: "°C" },
+    { dataPoint: "Chilled Water Inlet Temperature / 冰水入水溫度", unit: "°C" },
+    { dataPoint: "Cooling Water Outlet Temperature / 冷卻水出水溫度", unit: "°C" },
+    { dataPoint: "Cooling Water Inlet Temperature / 冷卻水入水溫度", unit: "°C" },
+    { dataPoint: "Evaporator Flow Rate / 蒸發器流速", unit: "lpm" },
+    { dataPoint: "Condenser Flow Rate / 冷凝器流速", unit: "lpm" }
+];
+
+const COOLING_TOWER_IO_POINTS = [
+    { dataPoint: "Power Consumption / 消耗功率", unit: "kW" },
+    { dataPoint: "Fan Speed Setpoint (Operating Frequency) / 風扇轉速設定值 (運轉頻率)", unit: "Hz" },
+    { dataPoint: "Cooling Tower Outlet Water Temperature Setpoint / 冷卻水出水溫度設定值", unit: "°C" },
+    { dataPoint: "Cooling Tower Inlet Water Temperature / 水塔入水溫度", unit: "°C" },
+    { dataPoint: "Cooling Tower Outlet Water Temperature / 水塔出水溫度", unit: "°C" },
+    { dataPoint: "Cooling Tower Flow Rate / 冷卻水塔流速", unit: "lpm" }
+];
+
+const ENVIRONMENT_IO_POINTS = [
+    { dataPoint: "Outdoor Wet Bulb Temperature / 室內/室外濕球溫度", unit: "°C" },
+    { dataPoint: "Outdoor Dry Bulb Temperature / 室內/室外乾球溫度", unit: "°C" }
+];
+
+function renderIoTable() {
+    const container = document.getElementById('ioTableContent');
+    if (!container) return;
+    let rows = [];
+
+    if (state.activeIoTab === 'white-cooling') {
+        state.coolingUnits.filter(u => !u.space.includes('Grey') && !u.space.includes('灰區')).forEach(u => {
+            const eqType = (u.equipmentType || '').split(' / ')[0].trim();
+            const isStandardAirOrWater = ['Row Cool (CW)', 'Row Cool (DX)', 'CRAC', 'CRAH'].some(t => eqType.includes(t));
+
+            if (isStandardAirOrWater) {
+                STANDARD_WHITE_COOLING_POINTS.forEach(pt => {
+                    rows.push({ region: "White Space / 白區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
+                });
+            } else {
+                if (!u.customIoPoints) {
+                    u.customIoPoints = [
+                        { dataPoint: "Power Consumption / 消耗功率", unit: "kW" },
+                        { dataPoint: "Coolant Supply Temperature / 額定冷卻液供水溫度", unit: "°C" }
+                    ];
+                }
+                u.customIoPoints.forEach((pt, ptIdx) => {
+                    rows.push({ region: "White Space / 白區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit, custom: true, eqId: u.equipmentId, ptIdx: ptIdx });
+                });
+            }
+        });
+
+    } else if (state.activeIoTab === 'gray-cooling') {
+        state.coolingUnits.filter(u => u.space.includes('Grey') || u.space.includes('灰區')).forEach(u => {
+            const eqType = (u.equipmentType || '').split(' / ')[0].trim();
+            if (eqType.includes('Pump')) {
+                return;
+            }
+            if (eqType.includes('Chiller')) {
+                CHILLER_IO_POINTS.forEach(pt => {
+                    rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
+                });
+            } else if (eqType.includes('Cooling Tower')) {
+                COOLING_TOWER_IO_POINTS.forEach(pt => {
+                    rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
+                });
+            } else {
+                rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: "Power Consumption / 消耗功率", unit: "kW", custom: false });
+                rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: "Outlet Water Temperature / 出水溫度", unit: "°C", custom: false });
+            }
+        });
+
+        ENVIRONMENT_IO_POINTS.forEach(pt => {
+            rows.push({ region: "Grey Space / 灰區", item: "Environment / 環境", id: "ENV_01", dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
+        });
+
+    } else if (state.activeIoTab === 'rack-io') {
+        state.racks.forEach(r => {
+            const rId = `${r.zoneId}-R${r.rackNo}`;
+            rows.push({ region: "White Space / 白區", item: "Rack / 機櫃", id: rId, dataPoint: "Input Voltage / 輸入電壓", unit: "V", custom: false });
+            rows.push({ region: "White Space / 白區", item: "Rack / 機櫃", id: rId, dataPoint: "Input Current / 輸入電流", unit: "A", custom: false });
+
+            const matchedSensors = state.sensors.filter(s => s.attachment === 'Rack' && s.rackId === rId);
+            if (matchedSensors.length > 0) {
+                matchedSensors.forEach(s => {
+                    let ptName = "Air Temperature / 空氣溫度";
+                    if (s.inletOrOutlet === 'Air Outlet') {
+                        ptName = `Air Outlet Temperature (${s.rackId}) / 出風溫度`;
+                    } else if (s.inletOrOutlet === 'Air Inlet') {
+                        ptName = `Air Inlet Temperature (${s.rackId}) / 入風溫度`;
+                    } else {
+                        ptName = `Air Temperature (${s.rackId}) / 溫度`;
+                    }
+                    rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: s.sensorId || rId, dataPoint: ptName, unit: "°C", custom: false });
+                });
+            } else {
+                rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: rId, dataPoint: "Air Outlet Temperature (Unassigned) / 出風溫度", unit: "°C", custom: false });
+                rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: rId, dataPoint: "Air Inlet Temperature (Unassigned) / 入風溫度", unit: "°C", custom: false });
+            }
+        });
+    }
+
+    container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:0.85rem; color:var(--text-muted);">
+            💡 針對 CDU 或特殊白區設備，您可以在下方表格中自由新增與定義自定義點位。
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Area / 區域</th>
+                    <th>Items / 項目</th>
+                    <th>Equipment ID / Sensor ID</th>
+                    <th>Data Point / 資料點位</th>
+                    <th>Unit / 單位</th>
+                    <th>IP / Protocol Metadata (SCADA)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map((r, rIdx) => `
+                    <tr>
+                        <td>${r.region}</td>
+                        <td>${r.item}</td>
+                        <td><strong>${r.id}</strong></td>
+                        <td>
+                            ${r.custom ? `<input type="text" class="form-control" value="${r.dataPoint}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'dataPoint', this.value)">` : r.dataPoint}
+                        </td>
+                        <td>
+                            ${r.custom ? `<input type="text" class="form-control" value="${r.unit}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'unit', this.value)">` : r.unit}
+                        </td>
+                        <td><input type="text" class="form-control" placeholder="192.168.x.x"></td>
+                        <td>
+                            ${r.custom ? `<button class="btn btn-outline btn-sm" onclick="addCustomIoPoint('${r.eqId}')" title="新增自定義點位">＋新增</button> <button class="btn btn-danger btn-sm" onclick="deleteCustomIoPoint('${r.eqId}', ${r.ptIdx})" title="刪除點位">刪除</button>` : '<span style="color:#aaa; font-size:0.75rem;">標準內建</span>'}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function exportIoTableCsv() {
+    let csv = "\uFEFFArea / 區域,Items / 項目,Equipment ID / Sensor ID,Data Point / 資料點位,Unit / 單位,IP / Protocol Metadata (SCADA)\n";
+    let rows = [];
+
+    // 1. white-cooling
+    state.coolingUnits.filter(u => !u.space.includes('Grey') && !u.space.includes('灰區')).forEach(u => {
+        const eqType = (u.equipmentType || '').split(' / ')[0].trim();
+        const isStandardAirOrWater = ['Row Cool (CW)', 'Row Cool (DX)', 'CRAC', 'CRAH'].some(t => eqType.includes(t));
+
+        if (isStandardAirOrWater) {
+            STANDARD_WHITE_COOLING_POINTS.forEach(pt => {
+                rows.push({ region: "White Space / 白區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit });
+            });
+        } else {
+            const customPts = u.customIoPoints || [
+                { dataPoint: "Power Consumption / 消耗功率", unit: "kW" },
+                { dataPoint: "Coolant Supply Temperature / 額定冷卻液供水溫度", unit: "°C" }
+            ];
+            customPts.forEach(pt => {
+                rows.push({ region: "White Space / 白區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit });
+            });
+        }
+    });
+
+    // 2. gray-cooling
+    state.coolingUnits.filter(u => u.space.includes('Grey') || u.space.includes('灰區')).forEach(u => {
+        const eqType = (u.equipmentType || '').split(' / ')[0].trim();
+        if (eqType.includes('Pump')) return;
+        if (eqType.includes('Chiller')) {
+            CHILLER_IO_POINTS.forEach(pt => {
+                rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit });
+            });
+        } else if (eqType.includes('Cooling Tower')) {
+            COOLING_TOWER_IO_POINTS.forEach(pt => {
+                rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: pt.dataPoint, unit: pt.unit });
+            });
+        } else {
+            rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: "Power Consumption / 消耗功率", unit: "kW" });
+            rows.push({ region: "Grey Space / 灰區", item: u.equipmentType, id: u.equipmentId, dataPoint: "Outlet Water Temperature / 出水溫度", unit: "°C" });
+        }
+    });
+    ENVIRONMENT_IO_POINTS.forEach(pt => {
+        rows.push({ region: "Grey Space / 灰區", item: "Environment / 環境", id: "ENV_01", dataPoint: pt.dataPoint, unit: pt.unit });
+    });
+
+    // 3. rack-io
+    state.racks.forEach(r => {
+        const rId = `${r.zoneId}-R${r.rackNo}`;
+        rows.push({ region: "White Space / 白區", item: "Rack / 機櫃", id: rId, dataPoint: "Input Voltage / 輸入電壓", unit: "V" });
+        rows.push({ region: "White Space / 白區", item: "Rack / 機櫃", id: rId, dataPoint: "Input Current / 輸入電流", unit: "A" });
+
+        const matchedSensors = state.sensors.filter(s => s.attachment === 'Rack' && s.rackId === rId);
+        if (matchedSensors.length > 0) {
+            matchedSensors.forEach(s => {
+                let ptName = "Air Temperature / 空氣溫度";
+                if (s.inletOrOutlet === 'Air Outlet') {
+                    ptName = `Air Outlet Temperature (${s.rackId}) / 出風溫度`;
+                } else if (s.inletOrOutlet === 'Air Inlet') {
+                    ptName = `Air Inlet Temperature (${s.rackId}) / 入風溫度`;
+                } else {
+                    ptName = `Air Temperature (${s.rackId}) / 溫度`;
+                }
+                rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: s.sensorId || rId, dataPoint: ptName, unit: "°C" });
+            });
+        } else {
+            rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: rId, dataPoint: "Air Outlet Temperature (Unassigned) / 出風溫度", unit: "°C" });
+            rows.push({ region: "White Space / 白區", item: "Rack Sensor / 機櫃感測器", id: rId, dataPoint: "Air Inlet Temperature (Unassigned) / 入風溫度", unit: "°C" });
+        }
+    });
+
+    rows.forEach(r => {
+        csv += `"${r.region}","${r.item}","${r.id}","${r.dataPoint}","${r.unit}",""\n`;
+    });
+
+    downloadFile(`ACES_IO_Table_${state.siteInfo.siteId || 'Project'}.csv`, csv, 'text/csv;charset=utf-8;');
+}
+
+function addCustomIoPoint(eqId) {
+    const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
+    if (u) {
+        if (!u.customIoPoints) u.customIoPoints = [];
+        u.customIoPoints.push({ dataPoint: "New Data Point / 新增點位", unit: "-" });
+        renderIoTable();
+        saveLocalStorageDraft();
+    }
+}
+
+function updateCustomIoPoint(eqId, ptIdx, field, val) {
+    const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
+    if (u && u.customIoPoints && u.customIoPoints[ptIdx]) {
+        u.customIoPoints[ptIdx][field] = val;
+        saveLocalStorageDraft();
+    }
+}
+
+function deleteCustomIoPoint(eqId, ptIdx) {
+    const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
+    if (u && u.customIoPoints) {
+        u.customIoPoints.splice(ptIdx, 1);
+        renderIoTable();
+        saveLocalStorageDraft();
+    }
+}
+
+// --- 8. O&M PARAMETERS ---
+function renderOmParams() {
+    const tbody = document.getElementById('omTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    // 1. 靜態唯讀 ASHRAE 參考標準列
+    tbody.innerHTML += `
+        <tr style="background-color: #e6fcff; color: #0052cc;">
+            <td style="font-weight: 600;">ASHRAE Standard / ASHRAE 標準</td>
+            <td style="font-weight: 600;">Rack / 機櫃</td>
+            <td style="font-weight: 600;">GLOBAL_RACK</td>
+            <td style="font-weight: 600;">Air Inlet Temperature / 入風溫度</td>
+            <td style="font-weight: 600;">22</td>
+            <td style="font-weight: 600;">27</td>
+            <td style="font-weight: 600;">18</td>
+        </tr>
+        <tr style="background-color: #e6fcff; color: #0052cc;">
+            <td style="font-weight: 600;">ASHRAE Standard / ASHRAE 標準</td>
+            <td style="font-weight: 600;">Cold Aisle / 冷通道</td>
+            <td style="font-weight: 600;">GLOBAL_AISLE</td>
+            <td style="font-weight: 600;">Humidity / 濕度</td>
+            <td style="font-weight: 600;">50</td>
+            <td style="font-weight: 600;">60</td>
+            <td style="font-weight: 600;">40</td>
+        </tr>
+    `;
+
+    // 2. 機櫃控制目標
+    state.racks.forEach(r => {
+        const rId = `${r.zoneId}-R${r.rackNo}`;
+        tbody.innerHTML += `
+            <tr>
+                <td>Control Target / 控制目標</td>
+                <td>Rack / 機櫃</td>
+                <td><strong>${rId}</strong></td>
+                <td>Air Inlet Temperature / 入風溫度量測值</td>
+                <td><input type="number" class="form-control" value="${r.omSuggested || ''}" placeholder="" onchange="updateRackOm('${rId}', 'omSuggested', this.value)"></td>
+                <td><input type="number" class="form-control" value="${r.omUpper || ''}" placeholder="" onchange="updateRackOm('${rId}', 'omUpper', this.value)"></td>
+                <td><input type="number" class="form-control" value="${r.omLower || ''}" placeholder="" onchange="updateRackOm('${rId}', 'omLower', this.value)"></td>
+            </tr>
+        `;
+    });
+
+    // 3. 冷卻設備控制約束條件 (只允許特定設備顯示)
+    state.coolingUnits.forEach(u => {
+        const eqType = u.equipmentType || '';
+        let constraintName = "";
+        
+        if (eqType.includes('Chiller')) {
+            constraintName = "Chilled Water Outlet Temperature Setpoint / 冰水出水溫度設定值";
+        } else if (eqType.includes('CRAH') || eqType.includes('CRAC') || eqType.includes('Row Cool') || eqType.includes('RowCool')) {
+            constraintName = "Outlet Air Temperature Setpoint / 出風溫度設定值";
+        } else {
+            return; // 略過 Pump, Cooling Tower, CDU 等不需要顯示的設備
+        }
+
+        tbody.innerHTML += `
+            <tr>
+                <td>Control Constraint / 控制約束條件</td>
+                <td>${eqType}</td>
+                <td><strong>${u.equipmentId}</strong></td>
+                <td>${constraintName}</td>
+                <td><input type="number" class="form-control" value="${u.omSuggested || ''}" placeholder="" onchange="updateCoolingOm('${u.equipmentId}', 'omSuggested', this.value)"></td>
+                <td><input type="number" class="form-control" value="${u.omUpper || ''}" placeholder="" onchange="updateCoolingOm('${u.equipmentId}', 'omUpper', this.value)"></td>
+                <td><input type="number" class="form-control" value="${u.omLower || ''}" placeholder="" onchange="updateCoolingOm('${u.equipmentId}', 'omLower', this.value)"></td>
+            </tr>
+        `;
+    });
+}
+
+function applyFirstRackOmToAll() {
+    if (state.racks.length <= 1) {
+        alert('⚠️ 系統中僅有一台或沒有機櫃可供套用。');
+        return;
+    }
+    
+    const firstRack = state.racks[0];
+    const suggested = firstRack.omSuggested || '';
+    const upper = firstRack.omUpper || '';
+    const lower = firstRack.omLower || '';
+    
+    if (suggested === '' && upper === '' && lower === '') {
+        alert('⚠️ 首台機櫃目前無設定任何參數，請先輸入數值後再套用。');
+        return;
+    }
+
+    state.racks.forEach((r, idx) => {
+        if (idx > 0) {
+            r.omSuggested = suggested;
+            r.omUpper = upper;
+            r.omLower = lower;
+        }
+    });
+    
+    alert(`✅ 已成功將首台機櫃的參數 (建議值: ${suggested || '-'}, 上限: ${upper || '-'}, 下限: ${lower || '-'}) 套用至所有機櫃！`);
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function updateRackOm(rId, field, val) {
+    const parts = rId.split('-');
+    if(parts.length >= 2) {
+        const zId = parts[0];
+        const rNo = parseInt(parts[1].substring(1), 10);
+        const rack = state.racks.find(r => r.zoneId === zId && r.rackNo === rNo);
+        if(rack) {
+            rack[field] = val;
+            saveLocalStorageDraft();
+        }
+    }
+}
+
+function updateCoolingOm(eqId, field, val) {
+    const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
+    if(u) {
+        u[field] = val;
+        saveLocalStorageDraft();
+    }
+}
+
+function applyAshraeToAllRacks() {
+    state.racks.forEach(r => {
+        r.omSuggested = 22;
+        r.omUpper = 27;
+        r.omLower = 18;
+    });
+    alert('✅ 已成功套用 ASHRAE 建議值 (22°C / 上限27°C / 下限18°C) 至所有機櫃！');
+    renderOmParams();
+    saveLocalStorageDraft();
+}
+
+function exportOmCsv() {
+    let csv = "Type,Item,ItemID,Constraint,Suggested,Upper,Lower\n";
+    state.racks.forEach(r => {
+        const rId = `${r.zoneId}-R${r.rackNo}`;
+        csv += `Control Target,Rack,${rId},Air Inlet Temp,${r.omSuggested || 22},${r.omUpper || 27},${r.omLower || 18}\n`;
+    });
+    state.coolingUnits.forEach(u => {
+        const eqType = u.equipmentType || '';
+        let constraintName = "";
+        if (eqType.includes('Chiller')) constraintName = "Chilled Water Outlet Temperature Setpoint";
+        else if (eqType.includes('CRAH') || eqType.includes('CRAC') || eqType.includes('Row Cool') || eqType.includes('RowCool')) constraintName = "Outlet Air Temperature Setpoint";
+        else return;
+
+        csv += `Control Constraint,${eqType},${u.equipmentId},${constraintName},${u.omSuggested || 22},${u.omUpper || 25},${u.omLower || 18}\n`;
+    });
+    downloadFile(`ACES_OM_Parameters_${state.siteInfo.siteId || 'Project'}.csv`, csv, 'text/csv');
+}
+
+// --- VALIDATION HELPER ---
+function validateAllIds() {
+    for (let i = 0; i < state.rooms.length; i++) {
+        for (let j = i + 1; j < state.rooms.length; j++) {
+            if (state.rooms[i].roomId.toLowerCase() === state.rooms[j].roomId.toLowerCase()) {
+                alert(`⚠️ 匯出失敗：偵測到重複的 Room ID "${state.rooms[i].roomId}"，請於 Site Master 修改。`);
+                return false;
+            }
+            if (state.rooms[i].roomName.toLowerCase() === state.rooms[j].roomName.toLowerCase()) {
+                alert(`⚠️ 匯出失敗：偵測到重複的 Room Name "${state.rooms[i].roomName}"，請於 Site Master 修改。`);
+                return false;
+            }
+        }
+    }
+
+    for (let i = 0; i < state.coolingUnits.length; i++) {
+        for (let j = i + 1; j < state.coolingUnits.length; j++) {
+            if (state.coolingUnits[i].equipmentId && state.coolingUnits[j].equipmentId &&
+                state.coolingUnits[i].equipmentId.toLowerCase() === state.coolingUnits[j].equipmentId.toLowerCase()) {
+                alert(`⚠️ 匯出失敗：偵測到重複的 Equipment ID "${state.coolingUnits[i].equipmentId}"，請於 Cooling Units List 修改。`);
+                return false;
+            }
+        }
+    }
+
+    for (let i = 0; i < state.racks.length; i++) {
+        const id1 = `${state.racks[i].zoneId}-R${state.racks[i].rackNo}`.toLowerCase();
+        for (let j = i + 1; j < state.racks.length; j++) {
+            const id2 = `${state.racks[j].zoneId}-R${state.racks[j].rackNo}`.toLowerCase();
+            if (id1 === id2) {
+                alert(`⚠️ 匯出失敗：偵測到重複的 Rack ID "${state.racks[i].zoneId}-R${state.racks[i].rackNo}"，請於 Rack Survey 修改。`);
+                return false;
+            }
+        }
+    }
+
+    for (let i = 0; i < state.sensors.length; i++) {
+        for (let j = i + 1; j < state.sensors.length; j++) {
+            if (state.sensors[i].sensorId && state.sensors[j].sensorId &&
+                state.sensors[i].sensorId.toLowerCase() === state.sensors[j].sensorId.toLowerCase()) {
+                alert(`⚠️ 匯出失敗：偵測到重複的 Sensor ID "${state.sensors[i].sensorId}"，請於 Sensors List 修改。`);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// --- SAVE & LOAD PROJECT FILE (ZIP & JSON) ---
+async function exportProjectZip() {
+    if (!validateAllIds()) return;
+
+    if (typeof JSZip === 'undefined') {
+        alert('⚠️ JSZip 程式庫正在載入或未連接網路，將改為導出乾淨的 JSON 專案檔。');
+        exportProjectJson();
+        return;
+    }
+
+    const zip = new JSZip();
+    const cleanState = JSON.parse(JSON.stringify(state));
+    const attachmentsFolder = zip.folder("attachments");
+
+    if (cleanState.rooms) {
+        cleanState.rooms.forEach((room) => {
+            if (room.geometry && Array.isArray(room.geometry.cadFiles)) {
+                room.geometry.cadFiles.forEach((file) => {
+                    if (file.fileData && file.fileData.includes("base64,")) {
+                        const base64Data = file.fileData.split("base64,")[1];
+                        const safeFileName = `${room.roomId}_${file.fileName}`.replace(/[\\/:*?"<>|]/g, '_');
+                        attachmentsFolder.file(safeFileName, base64Data, {base64: true});
+                        
+                        file.zipPath = `attachments/${safeFileName}`;
+                        file.fileData = "";
+                    }
+                });
+            }
+        });
+    }
+
+    zip.file("project_data.txt", JSON.stringify(cleanState, null, 2));
+
+    try {
+        const content = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 }
+        });
+        const fileName = `ACES_SiteSurvey_${state.siteInfo.siteId || 'Project'}_${state.siteInfo.surveyDate || 'Draft'}.zip`;
+        
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch(e) {
+        console.error("ZIP Generation error:", e);
+        alert("⚠️ 生成 ZIP 封包失敗，切換為導出 JSON 專案檔。");
+        exportProjectJson();
+    }
+}
+
+function exportProjectJson() {
+    if (!validateAllIds()) return;
+    const jsonStr = JSON.stringify(state, null, 2);
+    const fileName = `ACES_SiteSurvey_${state.siteInfo.siteId || 'Project'}_${state.siteInfo.surveyDate || 'Draft'}.json`;
+    downloadFile(fileName, jsonStr, 'application/json');
+}
+
+async function importProjectFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+
+    if (fileName.endsWith('.zip')) {
+        try {
+            if (typeof JSZip === 'undefined') {
+                alert('⚠️ JSZip 程式庫未載入，請確認網路連線。');
+                return;
+            }
+            const zip = await JSZip.loadAsync(file);
+            const jsonFile = zip.file("project_data.txt") || zip.file("project_data.json");
+            if (!jsonFile) {
+                alert('⚠️ ZIP 封包內未找到 project_data 設定檔。');
+                return;
+            }
+
+            let jsonText = await jsonFile.async("string");
+            if (jsonText.charCodeAt(0) === 0xFEFF) {
+                jsonText = jsonText.slice(1);
+            }
+            const importedState = JSON.parse(jsonText);
+
+            if (importedState.rooms) {
+                for (const room of importedState.rooms) {
+                    if (room.geometry && Array.isArray(room.geometry.cadFiles)) {
+                        for (const cadFile of room.geometry.cadFiles) {
+                            if (cadFile.zipPath) {
+                                const zippedFile = zip.file(cadFile.zipPath);
+                                if (zippedFile) {
+                                    const base64 = await zippedFile.async("base64");
+                                    cadFile.fileData = `data:application/octet-stream;base64,${base64}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            state = importedState;
+            sanitizeState();
+            renderAll();
+            alert('🎉 ZIP 專案封包讀取成功！已還原設定檔與所有原檔圖檔。');
+        } catch(err) {
+            console.error('ZIP Import Error:', err);
+            alert('⚠️ ZIP 專案封包解析失敗，請確認檔案是否完整。');
+        } finally {
+            event.target.value = '';
+        }
+    } else {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let rawText = e.target.result;
+                if (rawText.charCodeAt(0) === 0xFEFF) {
+                    rawText = rawText.slice(1);
+                }
+                const imported = JSON.parse(rawText);
+                if (imported && (imported.siteInfo || imported.rooms)) {
+                    state = imported;
+                    sanitizeState();
+                    renderAll();
+                    alert('🎉 JSON 專案檔讀取成功！');
+                } else {
+                    alert('⚠️ 專案檔格式不符合 ACES Data Schema。');
+                }
+            } catch(err) {
+                console.error('Import Error:', err);
+                alert('⚠️ 讀取失敗，請確認檔案是否為有效的檔案。');
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+
+function exportMasterJSON() {
+    if (!validateAllIds()) return;
+    const jsonStr = JSON.stringify(state, null, 2);
+    downloadFile(`ACES_AI_MasterSchema_${state.siteInfo.siteId || 'Project'}.json`, jsonStr, 'application/json');
+}
+
+function downloadFile(filename, text, type) {
+    const blob = new Blob([text], {type: type});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// --- LOCAL STORAGE DRAFT ---
+function saveLocalStorageDraft() {
+    try {
+        localStorage.setItem('ACES_FAE_DRAFT', JSON.stringify(state));
+    } catch(e) {
+        console.warn('LocalStorage quota exceeded. Saving lightweight state without heavy binary data...', e);
+        try {
+            const lightState = JSON.parse(JSON.stringify(state));
+            if (lightState.rooms) {
+                lightState.rooms.forEach(r => {
+                    if (r.geometry && Array.isArray(r.geometry.cadFiles)) {
+                        r.geometry.cadFiles.forEach(f => {
+                            f.fileData = "";
+                        });
+                    }
+                });
+            }
+            localStorage.setItem('ACES_FAE_DRAFT', JSON.stringify(lightState));
+        } catch(err) {
+            console.error('Failed to save draft:', err);
+        }
+    }
+}
+
+function loadLocalStorageDraft() {
+    const saved = localStorage.getItem('ACES_FAE_DRAFT');
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (parsed && (parsed.siteInfo || parsed.rooms)) {
+                state = parsed;
+                sanitizeState();
+            }
+        } catch(e){
+            console.warn('Failed to load local storage draft:', e);
+        }
+    }
+}
+</script>
+
+
+<!-- 內嵌的 HVAC Diagram Builder 完整原始碼，以隱藏 textarea (RCDATA) 儲存，避免與外層頁面的 CSS/JS 產生衝突或解析問題。JS 會在需要時讀出並指派給 iframe.srcdoc。 -->
+<textarea id="hvac-builder-source" style="display:none;" aria-hidden="true">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC System Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 品牌與商用核心配色變數 */
+        :root {
+            --brand-blue: #0087DC;    
+            --brand-cyan: #64D7D7;    
+            --brand-green: #B9EB5F;   
+            
+            --bg-base: #f4f7f9;       
+            --bg-panel: #ffffff;      
+            --border-light: #e2e8f0;  
+            --border-dark: #cbd5e1;   
+            
+            --text-primary: #1e293b;  
+            --text-secondary: #475569;
+            
+            --cold-pipe: #0087DC;     
+            --hot-pipe: #ef4444;      
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+        }
+
+        /* 全螢幕編輯模式下的尺寸保險，確保跨瀏覽器都能正確佔滿整個螢幕 */
+        html:fullscreen, html:-webkit-full-screen, html:-ms-fullscreen {
+            width: 100%;
+            height: 100%;
+        }
+        html:fullscreen body, html:-webkit-full-screen body, html:-ms-fullscreen body {
+            height: 100%;
+        }
+        #btn-fullscreen.is-fullscreen svg {
+            color: var(--brand-blue);
+        }
+        
+        /* 側邊欄樣式 */
+        #sidebar { 
+            width: 320px; 
+            min-width: 320px;
+            background: var(--bg-panel); 
+            border-right: 1px solid var(--border-dark); 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 2px 0 15px rgba(0,0,0,0.03);
+            z-index: 50;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        #sidebar.collapsed {
+            margin-left: -320px; 
+        }
+        
+        .sidebar-header { 
+            padding: 20px; 
+            font-size: 1.15rem; 
+            font-weight: 700; 
+            border-bottom: 1px solid var(--border-light); 
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            border-left: 6px solid var(--brand-blue); 
+        }
+        .component-list { padding: 20px 15px; overflow-y: auto; flex: 1; }
+        
+        /* 側邊欄分類標題 */
+        .sidebar-category {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            padding-left: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 側邊欄按鈕 */
+        .component-btn { 
+            width: 100%; 
+            padding: 12px 15px; 
+            margin-bottom: 12px; 
+            background: var(--bg-panel); 
+            color: var(--text-primary); 
+            border: 1px solid var(--border-light); 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-size: 0.95rem; 
+            font-weight: 500;
+            text-align: left; 
+            transition: all 0.2s ease; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .component-btn:hover { 
+            border-color: var(--brand-cyan); 
+            box-shadow: 0 4px 8px rgba(100, 215, 215, 0.15); 
+            transform: translateY(-1px);
+        }
+        .component-btn img { 
+            height: 38px; 
+            padding: 2px; 
+            mix-blend-mode: multiply; 
+        }
+        
+        /* 工作區與工具列樣式 */
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #toolbar { 
+            height: 64px;
+            padding: 0 25px; 
+            display: flex; 
+            justify-content: flex-end; 
+            align-items: center; 
+            background: var(--bg-panel); 
+            border-bottom: 1px solid var(--border-dark); 
+            box-sizing: border-box;
+            z-index: 40;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        
+        /* 側邊欄收折按鈕 */
+        .btn-toggle-sidebar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: auto;
+            flex-shrink: 0;
+        }
+        .btn-toggle-sidebar:hover {
+            background: #f1f5f9;
+            color: var(--brand-blue);
+        }
+        
+        /* 通用工具按鈕 */
+        .tool-btn { 
+            padding: 8px 16px; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            transition: all 0.2s ease; 
+            margin-left: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-reset { background: #e2e8f0; color: var(--text-secondary); border: 1px solid var(--border-dark); }
+        .btn-reset:hover { background: #cbd5e1; color: var(--text-primary); }
+        .btn-output { background: var(--brand-blue); color: white; }
+        .btn-output:hover { background: var(--brand-cyan); color: #fff; } 
+        
+        /* 語言切換滑動開關樣式 */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            user-select: none;
+            margin-left: 22px;
+        }
+        .lang-label {
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        .lang-label.active {
+            color: var(--brand-blue);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 22px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-dark);
+            transition: .3s;
+            border-radius: 22px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        input:checked + .slider {
+            background-color: var(--brand-cyan);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* 畫布區域 */
+        #workspace { 
+            flex: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background-color: var(--bg-base);
+            background-image: radial-gradient(var(--border-dark) 1px, transparent 1px);
+            background-size: 20px 20px; 
+        }
+        #svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* 拖曳 JSON 檔案匯入時的視覺提示 */
+        #drop-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 135, 220, 0.08);
+            border: 3px dashed var(--brand-blue);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        #workspace.drag-over #drop-overlay {
+            opacity: 1;
+        }
+        .drop-overlay-text {
+            background: #ffffff;
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--brand-blue);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            border: 1px solid var(--border-dark);
+        }
+        
+        /* 拖拉元件節點樣式 */
+        .node { 
+            position: absolute; 
+            padding: 8px; 
+            cursor: grab; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            width: 120px; 
+            z-index: 10; 
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: border-color 0.2s, background-color 0.2s;
+            overflow: visible !important; 
+        }
+        .node:hover { 
+            border-color: var(--brand-green); 
+            background-color: rgba(185, 235, 95, 0.1); 
+        }
+        .node:active { cursor: grabbing; }
+
+        /* 元件圖片外框共用樣式 */
+        .img-wrapper {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        .node img { 
+            pointer-events: none; 
+            object-fit: contain;
+        }
+
+        /* == 比例縮放控制 (70% vs 50% vs 大設備) == */
+        .node-regular .img-wrapper {
+            height: 60px;
+        }
+        .node-regular img {
+            max-width: 70px;
+            max-height: 56px;
+            width: auto;
+            height: auto;
+        }
+        
+        .node-pump .img-wrapper {
+            height: 35px; 
+        }
+        .node-pump img {
+            max-width: 35px; 
+            max-height: 28px; 
+            width: auto;
+            height: auto;
+        }
+        
+        .node-large-shrink .img-wrapper {
+            height: 45px; 
+        }
+        .node-large-shrink img {
+            max-width: 49px; 
+            max-height: 39px; 
+            width: auto;
+            height: auto;
+        }
+        /* ================================ */
+
+        /* == 三通接頭 / 分歧點 (Junction) == */
+        .node-junction {
+            width: 26px !important;
+            height: 26px;
+            padding: 0;
+            border-radius: 50%;
+        }
+        .junction-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 2px var(--border-dark);
+            transition: background-color 0.2s;
+        }
+        .node-junction:hover .junction-dot {
+            background: var(--brand-green);
+        }
+        .node-junction:hover {
+            border-color: transparent;
+            background-color: transparent;
+        }
+        .node-junction .delete-node-btn {
+            top: -10px;
+            right: -10px;
+        }
+        
+        /* 節點資訊卡片面板 */
+        .node-info { 
+            background: #ffffff; 
+            padding: 6px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-dark); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 110px; 
+            margin-top: 5px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            overflow: visible !important;
+        }
+        .node .node-title { 
+            font-weight: 600; 
+            font-size: 0.8rem; 
+            margin-bottom: 6px; 
+            text-align: center; 
+            pointer-events: none; 
+            color: var(--text-primary); 
+            line-height: 1.2;
+        }
+        
+        /* 編輯狀態的 input */
+        .node input { 
+            width: 95%; 
+            background: var(--bg-base); 
+            border: 1px solid var(--border-light); 
+            color: var(--brand-blue); 
+            font-weight: bold;
+            text-align: center; 
+            border-radius: 4px; 
+            padding: 4px 2px; 
+            font-size: 0.75rem; 
+            line-height: 1.4;
+            min-height: 24px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.2s;
+            display: block;
+        }
+        .node input:focus { border-color: var(--brand-cyan); background: #fff;}
+
+        /* 導出 PNG 時專用的靜態文字樣式 */
+        .node .static-id-text {
+            display: none;
+            width: 100%;
+            color: var(--brand-blue); 
+            font-weight: bold;
+            text-align: center; 
+            font-size: 0.75rem;
+            line-height: 1.4;
+            padding: 4px 0;
+            min-height: 24px;
+            box-sizing: border-box;
+            word-break: break-all;
+            overflow: visible;
+        }
+        
+        /* 刪除節點按鈕 */
+        .delete-node-btn { 
+            position: absolute; 
+            top: -8px; 
+            right: -8px; 
+            background: #ef4444; 
+            color: white; 
+            border-radius: 50%; 
+            width: 22px; 
+            height: 22px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 12px; 
+            cursor: pointer; 
+            opacity: 0; 
+            transition: all 0.2s ease; 
+            z-index: 20; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        .delete-node-btn:hover { transform: scale(1.15); background: #dc2626; }
+        .node:hover .delete-node-btn { opacity: 1; }
+
+        /* 選取狀態樣式：全選 / 點選 / Shift 多選後的視覺提示 */
+        .node.node-selected {
+            border-color: var(--brand-blue) !important;
+            background-color: rgba(0, 135, 220, 0.08) !important;
+            box-shadow: 0 0 0 3px rgba(0, 135, 220, 0.25);
+        }
+        .node-junction.node-selected .junction-dot {
+            background: var(--brand-blue);
+        }
+
+        /* 底部連線控制面板 */
+        #connection-controls { 
+            position: absolute; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: #ffffff; 
+            padding: 10px 15px; 
+            border-radius: 30px; 
+            z-index: 100; 
+            border: 1px solid var(--border-dark); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+        }
+        .pipe-btn { 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.9rem;
+            transition: all 0.2s ease; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+        }
+        .pipe-btn::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .btn-cold { color: var(--cold-pipe); border: 2px solid var(--cold-pipe); }
+        .btn-cold::before { background: var(--cold-pipe); }
+        .btn-cold:hover { background-color: var(--cold-pipe); color: white; }
+        .btn-cold:hover::before { background: white; }
+        
+        .btn-hot { color: var(--hot-pipe); border: 2px solid var(--hot-pipe); }
+        .btn-hot::before { background: var(--hot-pipe); }
+        .btn-hot:hover { background-color: var(--hot-pipe); color: white; }
+        .btn-hot:hover::before { background: white; }
+
+        .btn-junction { color: var(--text-secondary); border: 2px solid var(--border-dark); }
+        .btn-junction::before { background: var(--text-secondary); }
+        .btn-junction:hover { background-color: var(--text-secondary); color: white; }
+        .btn-junction:hover::before { background: white; }
+
+        .pipe-controls-divider {
+            width: 1px;
+            background: var(--border-dark);
+            margin: 2px 0;
+        }
+
+        /* 畫布左下/右下角浮動資訊 */
+        #bottom-right-info {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            max-width: 360px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            pointer-events: none;
+        }
+        /* 操作提示文字：移到畫布右下角、圖示來源聲明的上方，避免佔用工具列空間造成按鈕換行 */
+        #conn-hint {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.5;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        /* Flaticon 聲明 */
+        #flaticon-attribution { 
+            color: var(--text-secondary); 
+            font-size: 11px; 
+            text-align: right; 
+            pointer-events: auto;
+        }
+        #flaticon-attribution a { color: var(--brand-blue); text-decoration: none; font-weight: 500;}
+        #flaticon-attribution a:hover { color: var(--brand-cyan); text-decoration: underline; }
+
+        /* 管線發光效果 */
+        .glow-cold { filter: drop-shadow(0 0 2px rgba(0, 135, 220, 0.4)); }
+        .glow-hot { filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.4)); }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-header" id="sidebar-title">Components Library</div>
+        <div class="component-list" id="component-list">
+            </div>
+    </div>
+
+    <div id="main">
+        <div id="toolbar">
+            <button class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Toggle Library">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            
+            <button class="tool-btn btn-reset" onclick="selectAllNodes()" id="btn-select-all">Select All</button>
+            <button class="tool-btn btn-reset" onclick="resetCanvas()" id="btn-reset">Reset Layout</button>
+            <div style="width: 1px; height: 20px; background: var(--border-dark); margin: 0 10px;"></div>
+            <button class="tool-btn btn-output" onclick="exportCode()">Export JSON</button>
+            <button class="tool-btn btn-output" onclick="exportPNG()">Export PNG</button>
+            <button class="tool-btn btn-reset" onclick="triggerImportFile()" id="btn-import">Import JSON</button>
+            <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;" onchange="handleFileInputChange(event)">
+            <div style="width: 1px; height: 20px; background: var(--border-dark); margin: 0 10px;"></div>
+            
+            <div class="switch-container">
+                <span id="lang-label-en" class="lang-label active">EN</span>
+                <label class="switch">
+                    <input type="checkbox" id="lang-switch" onchange="toggleLanguage()">
+                    <span class="slider"></span>
+                </label>
+                <span id="lang-label-tw" class="lang-label">繁中</span>
+            </div>
+
+            <button class="btn-toggle-sidebar" onclick="toggleFullscreen()" id="btn-fullscreen" title="Fullscreen" style="margin-right:0; margin-left:12px; display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="workspace">
+            <svg id="svg-layer">
+                <defs></defs>
+            </svg>
+
+            <div id="drop-overlay">
+                <div class="drop-overlay-text" id="drop-overlay-text">📂 放開以載入 JSON 圖檔</div>
+            </div>
+            
+            <div id="connection-controls">
+                <button class="pipe-btn btn-cold" onclick="startConnecting('cold')">Cold Pipe</button>
+                <button class="pipe-btn btn-hot" onclick="startConnecting('hot')">Hot Pipe</button>
+                <div class="pipe-controls-divider"></div>
+                <button class="pipe-btn btn-junction" id="btn-add-junction" onclick="addJunctionNode()">+ Junction</button>
+            </div>
+
+            <div id="bottom-right-info">
+                <div id="conn-hint">💡 提示：<br>拖拉元件調整位置；左鍵點擊管線可刪除；右鍵點擊管線新增轉折點；拖曳管線兩端的方形控制點可改連接邊，雙擊還原自動。</div>
+                <div id="flaticon-attribution">
+                    Icons made by <a href="https://www.flaticon.com/authors/freepik" target="_blank">Freepik</a>, 
+                    <a href="https://www.flaticon.com/authors/flat-icons" target="_blank">Flat Icons</a>,
+                    <a href="https://www.flaticon.com/authors/vectors-market" target="_blank">Vectors Market</a><br>
+                    from <a href="https://www.flaticon.com/" target="_blank">www.flaticon.com</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 圖片資料區塊 (請貼上您的 9 組 Base64 字串) ---
+    const componentImages = {
+        'Chiller': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAACXBIWXMAAHYcAAB2HAGnwnjqAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAIABJREFUeJzt3XmUnHWd7/HPt6p6STp7iNLVYYmaBBMlISCLXjcG5LoABoniFuSiNIsKCDjO6MzJmXHuGXTEgEDSYTAQ2SSyCC7jwOCoM6NgIAEJQnIxQNJVkRDSCQlJL1W/+0e3HoSk0921fKue3/t1DsdzkFS9IZ1+Pv3UU09JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFDfzDsAKLcFt4f00zs2TUulNaMgO8ykGZIdKoXxkloG/po48L+NfqW175GzpvI9AkiojHcAUKpjbto6rrd3z7tl4b0q6j1P7+qcrbQ1FvXKhRv8AgGgBjEAUJfm3bjx8BDsDAs6vrd391GS0grinBYADBEDAHXjuH/dOKk7Y6eHoIUq6h0c6wFg5BgAqHlHfLfzBFm4uNv0PgVlOPADQOkYAKhNIdi8G3IfksLfSuHY/r/n3AQACcIAQG0JweYtz31UN3R+VdJbvXMAIKkYAKgZR13fObN4Y+fVMp3g3QIAScfLqXB3ZEdudGgsfFmyvxHvy68pDz92pXdC7Hol7ZTUJWmrpHUKYZ1MjykVfmXf+tYLvnmoZwwAuJr33U0fspSWhKCp3i14LQZATQuSHpfpZyrqZlv8zTXeQagvDAC4eM+ikNlxyKavSfZ3klLePdg7BkBdWSvpenW3XGfXLtrpHYPaxwBA1R25Indw6CveJtNx3i0YHAOgLm2V2dUq9iy2xYu7vGNQuxgAqKojl+c+HFRcLmmCdwv2jwFQ17ZK+keNb/mOLVpU9I5B7eHUK6pm3g2dFwQV7xAHf6AaJktarK6dvwiXXjrNOwa1hwGAqjhi+ca/VghXi685oLrM/pcKtiZcfOkZ3imoLXwzRkUtuD2k5y3ftNRk/+zdAkRsnGS3hosv+5fAS78YwBcCKmbB7SH99K7OWyUt8G7ByHANQAKZbtbO7WfZsmW93inwxRkAVEYI9vSu3BJx8AdqS9An1TL+7rBoETfdihwDABUx74bOr0vhc94dAPbqA9r+8o1h0SKOARHjNx9ld+TyzvMl/a13B4DBhDO0fdc3vCvghwGAsup/n3/4jncHgCG5JFx02ce9I+CDAYCyOXJF7uCiiteLryugfpiWhIu/8gbvDFQf36hRFkd2rGoIfcXbTJrk3QJgWMZLhRW8PTA+DACURWg88Bvc2x+oW+/QxV9e6B2B6mIAoGTzlneeLOlC7w4ApQiXh4su4jbdEWEAoCRHduRGq/+iP04fAvXt9VKGIR8RBgBKUmwo/oOkQ7w7AJSB2RfD+YvGeGegOhgAGLE5Nzw720xf9O4AUDaT1LSLG3hFggGAkQnBUiF9taQG7xQAZfVZ7wBUBwMAIzJvee6jJr3HuwNA2c0KF1021zsClccAwPCFYLLwVe8MABVi4RPeCag8BgCGbe7y3CmS3urdAaBi3ucdgMpjAGDYUha+7N0AoJLs8HDJJQd4V6CyGAAYliO+23mCpLd7dwCoKFPR3ukdgcpiAGB4LFzsnQCgGoyX+RKOAYAhO+a6P77ejNcGgUhM9w5AZTEAMGR9Db2fUlDGuwNAVczwDkBlMQAwZCHo094NAKrmdd4BqCwGAIbkqH997i2S5nh3AKiasd4BqCwGAIakmE593LsBQFUxABKO13MxJEE6gc/7jVH6jd4F6iv2qCW1yzvjz0Io2uWXby/LQ116aYsK6UOl4gkK+qxMbynH45ZJo3cAKovv6divIzueHh8am7ZKSnu3oLoeOWsq3yOqJCxYkFbboefKdIVq5OBr3/4mv/8JxksA2K/Q2PwucfAHKspWrizY4m9eoxDeL6nHuwfJxwDA/ll4r3cCEAtb/C8PSHaJdweSjwGA/Svysb9AVW3asETSWu8MJBsDAINacHtIyzTLuwOIia1cWZB0vXcHko0BgEE9vWPTNElN3h1AdArhPu8EJBsDAIOyjM30bgCi1Jx61jsBycZ9ADCoYtDMON4HFHaY6ccq6oGChUctNDyT6u3serj9qF7vMsTJvvGNl8LFl3lnIMEYABiUJfwDQUxaV5RdnupJ3fZwe/Zl7x4AqBYGAPbDDpWCc0NF7DbT3419pu3K/1xkfd4xAFBtDAAMLoRxCbxf5PpUoXjaqs8e/Lh3CAB4YQBgcCmNTdQJgKDVQemTVn126hbvFADwxLsAMLigMd4JZbQ+KH3S6v/TysEfQPQYABhUkMZ5N5TJnlDUAg7+ANCPAYBBmZJxBsBMX1t99tRHvTsAoFYwALA/NfGxpKUwad3YZ9qu9O4AgFrCAEDiFWWX81Y/APhLDAAkXNiR6rHbvCsAoNYwAJBoZvoxd/gDgNdiACDZinrAOwEAahEDAIlWsMCV/wCwFwwAJFq6J7PBuwEAahEDAIm2Z+K2Hd4NAFCLGABItLUfnd3j3QAAtYgBAABAhBgAAABEiAEAAECEGAAAAESIAQAAQIQYAAAARIgBAABAhBgAAABEiAEAAECEGAAAAESIAQAAQIQYAAAARIgBAABAhBgAAABEiAEAAECEzDsgVhs2bJjQ3Nw845577nmwlMc5+eSTy5UEAMNy7733lvTrTznllGP27Nmzbtq0aV1lSsIwZLwDYrFly5axPT09x6RSqRNCCCdImhdCYIABiFYI4cGmpiblcrk/SLrfzO4vFAoPTJ06dat3WwwYABW0adOmyel0+oxisfip3t7eo80sFULwzgKAWvMGSeeEEM5JpVLFfD7/oKSbC4XCbYyBymEAlFkIIZ3P50+RdKak94cQGs34QR8AhigVQjhO0nGpVOqKXC73E0krWltb7zGzgndcknARYJmEEBry+fzCfD6/VtKdkk6V1OicBQD1rFHShyXdmc/n1+dyuQs3bNjQ7B2VFAyAEq1fv74pl8tdmM/n/xBCuFHSTO8mAEigaZIWNzU1revs7PzC2rVr+QGrRAyAEuTz+fe2tLSslrRY0lTvHgCIwEFmdtWkSZPW5nK5k7xj6hkDYAS2bNnSmsvlVoQQHpD0Zu8eAIhNCOFNkv6ts7Pz3lwud7B3Tz1iAAxTLpf7dG9v71OSPu3dAgCxM7MPSfpdLpf7pHdLvWEADNGGDRuac7nclZJWSBrr3QMA+LNxkm7K5XIrNm/e3OIdUy8YAEOQz+dnNTU1rZL0Re8WAMA+fbpYLP46l8sd5h1SDxgA+5HP5/9jZj+QNMq7BQAwbE0hhFtyudy53iG1igGwF7lcrj2EsFzcKhkA6lla0pLOzs4veIfUIgbAq3R2dp4q6RrvDgBAeZjZ4nw+v8C7o9YwAF4hn8+/x8xuU/9qBAAkQyqEcBMXBv4lBsCAfD4/K4TwQ0l80AQAJE+jma3M5XLcvXUAA0D9N/kJIdyi/ptJAACSabyklblcbrR3SC1gAEhqbm6+VtIc7w4AQMXNlnSld0QtiH4AdHZ2nhFCOMu7AwBQNZ/N5XLRf55L1ANg06ZNU81smXcHAKDqrn7uueey3hGeoh4AqVTqCvHBPgAQo3ENDQ3f8o7wFO0AGHg7CO8LBYBIhRDOyOVy/9u7w0uUA2Dt2rWNZvYd7w4AgLur1q9f3+Qd4SHKATBx4sTzJM307gAAuJs+evToz3lHeIhuAIQQGiR9ybsDAFAbzOzLa9eubfTuqLboBkA+nz9T0sHeHQCAmnHQhAkTPukdUW1RDYAQQlrSl707AAC1xcy+OnCMiEZUAyCfz58iabp3BwCg5rwxn8+f7B1RTVENAElnegcAAGrWQu+AaopmAGzcuHGSpPd7dwAAatYHN23aNNk7olqiGQCpVOoTkqK7yhMAMGSNqVQqmhvERTMAJEV3hScAYNg+5R1QLVEMgI0bN04ys6O9OwAANe/YDRs2TPCOqIYoBkA6nX63Ivl3BQCUJN3Y2Pgu74hqiOKgaGbv9W4AANSHWI4ZUQyAEMLx3g0AgLrBAEiCgddyZnl3AADqxuFbt24d5x1RaYkfAKNGjZopybw7AAB1w7q7u2d4R1Ra4gdACIGP/QUADFfijx0MAAAAXivxx47EDwBF8JsIACivGH54TPwAMLOsdwMAoL6Y2VTvhkpL/AAIIST+Sk4AQNmN9Q6otMQPAEljvAMAAHWHAZAAif9NBACUXeKPHTEMAM4AAACGK/EDIOMd0NHREbwbAOzdh35W9E5ACX50Ugw/41VMY6WPT+3t7a43qeOrAwCACDEAAACIEAMAAIAIMQAAAIgQAwAAgAgxAAAAiBADAACACDEAAACIEAMAAIAIMQAAAIgQAwAAgAgxAAAAiBADAACACDEAAACIEAMAAIAIMQAAAIgQAwAAgAgxAAAAiBADAACACDEAAACIEAMAAIAIMQAAAIgQAwAAgAhlvAMAoF5tX3NfSb9+/NwTy1QCDB9nAAAAiBADAACACDEAAACIEAMAAIAIMQAAAIgQAwAAgAgxAAAAiJD7fQDa29utko9/8sknd0tqrORzYP+su1vNT29Q43Mb1fDCC0pv365Ud48kqdjUqML48eqdcoB6Dj5Ie94wTaGpybkYQOS629vbm70jKsl9AFTBTkmTvCNildn6osY8tErNTz4l6+vb6z+Tenm3Ui/vVkN+s0Y/9rhCJqPdh83QrmOOVt+kiVUuBgBJ0kveAZUWwwB4SQyAqrPePo391X+pZfWjUrE4vF/b16fRjz+h0U88qV3z5uqld75DIRPDlyqAGsIASICd3gGxSe/apYl33aOG/ObSHqhYVMuqR9T43EZtm3+qCuPGlicQAPbDzBI/ABJ/EaCZ7fBuiEnDH5/XAStuKf3g/8rHfH6LJt90qxr++HzZHhMABhNCSPwPj4kfACGETu+GWKRf2qlJd/5QqZ3l/3OT3rVLk35wpzLbtpX9sQHg1cxso3dDpSV+AEh6yjsgBtbXp4k/vLciB/8/Sb28WxPvvlfWu/eLCQGgXIrFYuKPHYkfAGa2zrshBmN/+V9lPe2/L5kXtmrMbx6q+PMAiFsMx47EXwRoZk+FELwzEi2z9cX+q/2rpOXhh/XyvDkqtLRU7TmBvRk/90TvBFQOZwDqXWNj45OSWAAVNOah3w77rX6lsN4+jfnvX1ft+QBEJzQ1NSX+DEDiB8CkSZO2S1rr3ZFU1t2t5ier/+dk1BO/l/X0VP15AUThscmTJyf+HWSJHwCSZGY/925IquanN+zzDn+VZL19at7wTNWfF0AUHvAOqIYoBkAIgQFQIY3P+b1TpvHZ59yeG0ByxXLMiGIAdHd3/1xSwbsjiRq2bHF87hfcnhtAYhV6enp+5R1RDVEMgGnTpnWZGe8dq4D0dr+XydJd292eG0Bi/XratGld3hHVEMUAGHCzd0ASWXd3lM8NILFu8g6olmgGQF9f362SOGKUmVXx7X+vee4Cr+oAKKueYrH4A++IaolmABx00EEvSvo37w4AQM360dSpU7d6R1RLNANgwI3eAQCAmvU974BqimoAtLa23iMp8Xd3AgAMj5n9v9bW1nu9O6opqgFgZoUQwje8OwAANeefzCyqC4uiGgCSlM1mV0h61rsDAFAzNr744ou3eEdUW3QDwMx6Qwjf8u4AANQGM/vn2bNnR/fhItENAEnq6urqkPSkdwcAwN26nTt3Xu8d4SHjHeBh9uzZPZ2dnV8ws/u8WwDUr+1rSvsWMn7uiWUqwUilUqnzpk由于程序代码的局限，我没法办到。
