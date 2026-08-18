@@ -318,7 +318,7 @@
         }
         .hvac-fullscreen-btn {
             position: absolute;
-            top: 12px;
+            top: 72px;
             right: 12px;
             z-index: 10000;
             background: rgba(255,255,255,0.96);
@@ -338,6 +338,14 @@
         }
         body.hvac-fullscreen-active {
             overflow: hidden;
+        }
+
+        /* 放大模式時按鈕跟著畫布視窗固定，並下移至工具列下方，避免蓋住 EN / 繁中切換。 */
+        body.hvac-fullscreen-active .hvac-fullscreen-btn {
+            position: fixed;
+            top: 72px;
+            right: 12px;
+            z-index: 10001;
         }
 
         .hvac-apply-bar {
@@ -442,14 +450,14 @@
 </header>
 
 <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('site-master', this)">📋 1. Site Master</button>
-    <button class="tab-btn" onclick="switchTab('geometry', this)">📐 2. Layout & Geometry</button>
-    <button class="tab-btn" onclick="switchTab('hvac', this)">🔌 3. HVAC Diagram</button>
-    <button class="tab-btn" onclick="switchTab('cooling', this)">❄️ 4. Cooling Units</button>
-    <button class="tab-btn" onclick="switchTab('rack', this)">🖥️ 5. Rack Survey</button>
-    <button class="tab-btn" onclick="switchTab('sensors', this)">📡 6. Sensors List</button>
-    <button class="tab-btn" onclick="switchTab('io-table', this)">📊 7. I/O Table</button>
-    <button class="tab-btn" onclick="switchTab('om-params', this)">⚙️ 8. O&M Parameters</button>
+    <button class="tab-btn active" onclick="switchTab('site-master', this)">1. Site Master</button>
+    <button class="tab-btn" onclick="switchTab('geometry', this)">2. Layout & Geometry</button>
+    <button class="tab-btn" onclick="switchTab('hvac', this)">3. HVAC Diagram</button>
+    <button class="tab-btn" onclick="switchTab('cooling', this)">4. Cooling Units</button>
+    <button class="tab-btn" onclick="switchTab('rack', this)">5. Rack Survey</button>
+    <button class="tab-btn" onclick="switchTab('sensors', this)">6. Sensors List</button>
+    <button class="tab-btn" onclick="switchTab('io-table', this)">7. I/O Table</button>
+    <button class="tab-btn" onclick="switchTab('om-params', this)">8. O&M Parameters</button>
 </div>
 
 <div class="container">
@@ -525,7 +533,6 @@
         <div class="card">
             <div class="card-header">
                 <span class="card-title">HVAC Topology Diagram / 水路與空調系統架構</span>
-                <button type="button" class="btn btn-outline btn-sm" onclick="openHvacBuilderNewTab()">🔗 在新分頁全螢幕開啟繪圖工具</button>
             </div>
 
             <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
@@ -1229,13 +1236,6 @@ function renderGeometry() {
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>CAD Option</label>
-                    <select class="form-control" onchange="updateRoomGeo(${state.activeRoomTab}, 'fileType', this.value)">
-                        <option value="2D" ${room.geometry.fileType === '2D' ? 'selected' : ''}>Option B - 2D CAD / PDF</option>
-                        <option value="3D" ${room.geometry.fileType === '3D' ? 'selected' : ''}>Option A - 3D DWG / STEP</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label>2D/3D CAD Files / 圖檔上傳 (可複選多檔)</label>
                     <input type="file" class="form-control" multiple accept=".dwg,.step,.stp,.pdf,.dxf,.png,.jpg,.jpeg,.zip,.rar" onchange="handleCadFileUpload(${state.activeRoomTab}, event)">
                     ${renderCadFileList(room)}
@@ -1318,7 +1318,7 @@ function renderCadFileList(room) {
         <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
             ${files.map((f, fIdx) => `
                 <div style="font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; justify-content:space-between; background:#f4f5f7; padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);">
-                    <span>📎 <strong>${f.fileName}</strong></span>
+                    <span>📎 <strong>${f.fileName}</strong>${f.loading ? ' <span style="color:var(--text-muted);">（讀取中…）</span>' : (f.loadError ? ' <span style="color:var(--danger);">（讀取失敗）</span>' : '')}</span>
                     <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
                 </div>
             `).join('')}
@@ -1327,28 +1327,48 @@ function renderCadFileList(room) {
 }
 
 function handleCadFileUpload(roomIdx, event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    if (!state.rooms[roomIdx].geometry) state.rooms[roomIdx].geometry = {};
-    if (!state.rooms[roomIdx].geometry.cadFiles) state.rooms[roomIdx].geometry.cadFiles = [];
+    const fileList = event.target.files;
+    if (!fileList || fileList.length === 0) return;
 
-    let loadedCount = 0;
-    Array.from(files).forEach(file => {
+    const room = state.rooms[roomIdx];
+    if (!room) return;
+    if (!room.geometry) room.geometry = {};
+    if (!Array.isArray(room.geometry.cadFiles)) room.geometry.cadFiles = [];
+
+    /*
+     * 先把檔名立即寫入 state 並重新繪製 UI，再非同步讀取檔案內容。
+     * 如此一來，使用者上傳後會立刻看到「已上傳」清單，不必切換頁籤才更新畫面。
+     */
+    const pendingEntries = Array.from(fileList).map(file => ({
+        fileName: file.name,
+        fileData: '',
+        loading: true
+    }));
+
+    room.geometry.cadFiles.push(...pendingEntries);
+    renderGeometry();
+
+    /* 清掉 input，讓同一個檔案之後仍可再次選取。 */
+    event.target.value = '';
+
+    pendingEntries.forEach((entry, localIdx) => {
+        const file = fileList[localIdx];
         const reader = new FileReader();
         reader.onload = function(e) {
-            state.rooms[roomIdx].geometry.cadFiles.push({
-                fileName: file.name,
-                fileData: e.target.result
-            });
-            loadedCount++;
-            if (loadedCount === files.length) {
-                saveLocalStorageDraft();
-                renderGeometry();
-            }
+            entry.fileData = e.target.result;
+            entry.loading = false;
+            renderGeometry();
+            saveLocalStorageDraft();
+        };
+        reader.onerror = function() {
+            entry.loading = false;
+            entry.loadError = true;
+            renderGeometry();
+            saveLocalStorageDraft();
+            console.warn('無法讀取上傳檔案：', file.name);
         };
         reader.readAsDataURL(file);
     });
-    event.target.value = '';
 }
 
 function removeCadFile(roomIdx, fileIdx) {
@@ -2648,6 +2668,49 @@ function renderIoTable() {
     `;
 }
 
+function exportIoTableCsv() {
+    const table = document.querySelector('#ioTableContent table');
+    if (!table) {
+        alert('⚠️ 目前沒有可匯出的 I/O Table 資料。');
+        return;
+    }
+
+    const activeBtn = document.querySelector('#io-table .sub-tab-btn.active');
+    const sectionName = activeBtn ? activeBtn.textContent.replace(/^\s*[^A-Za-z0-9一-龥]+\s*/, '').trim() : 'I/O Table';
+    const rows = [];
+
+    table.querySelectorAll('tr').forEach((tr, rowIndex) => {
+        const cells = Array.from(tr.querySelectorAll('th, td'));
+        if (cells.length === 0) return;
+
+        /* 操作欄只屬於 UI，不放入 CSV。 */
+        const dataCells = rowIndex === 0 ? cells.slice(0, -1) : cells.slice(0, -1);
+        rows.push(dataCells.map(cell => {
+            const input = cell.querySelector('input, textarea, select');
+            return input ? input.value : cell.textContent.replace(/\s+/g, ' ').trim();
+        }));
+    });
+
+    if (rows.length <= 1) {
+        alert('⚠️ 目前 I/O Table 沒有可匯出的資料。');
+        return;
+    }
+
+    const escapeCsv = value => {
+        const text = String(value ?? '');
+        return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+
+    const csv = [
+        ['Section / 分頁', ...rows[0]].map(escapeCsv).join(','),
+        ...rows.slice(1).map(row => [sectionName, ...row].map(escapeCsv).join(','))
+    ].join('\r\n');
+
+    const fileSafeSiteId = (state.siteInfo.siteId || 'Project').replace(/[\\/:*?"<>|]/g, '_');
+    const fileSafeSection = sectionName.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+    downloadFile(`ACES_IO_Table_${fileSafeSiteId}_${fileSafeSection}.csv`, '\ufeff' + csv, 'text/csv;charset=utf-8');
+}
+
 function addCustomIoPoint(eqId) {
     const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
     if (u) {
@@ -3022,12 +3085,14 @@ function exportMasterJSON() {
 
 function downloadFile(filename, text, type) {
     const blob = new Blob([text], {type: type});
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // --- LOCAL STORAGE DRAFT ---
@@ -3602,7 +3667,9 @@ function loadLocalStorageDraft() {
             font-size: 12px;
             line-height: 1.5;
             font-weight: 500;
-            text-align: right;
+            text-align: left;
+            white-space: pre-line;
+            width: 100%;
         }
 
         /* Flaticon 聲明 */
@@ -3711,7 +3778,7 @@ function loadLocalStorageDraft() {
     const i18n = {
         'tw': {
             title: '設備元件庫', reset: '重置架構', 
-            hint: '💡 提示：拖拉元件調整位置；左鍵點擊管線可刪除；右鍵點擊管線新增轉折點；拖曳管線兩端的方形控制點可改連接邊，雙擊還原自動。',
+            hint: '💡 提示：\n拖拉元件調整位置；左鍵點擊管線可刪除；右鍵點擊管線新增轉折點；拖曳管線兩端的方形控制點可改連接邊，雙擊還原自動。',
             deleteNodeConfirm: '確定要刪除這個元件嗎？\n(與其相連的管線也會一併清除)',
             deletePipeConfirm: '確定要刪除這條管線嗎？',
             coldPipeStart: '<span style="color:var(--cold-pipe);">選擇第一個元件 (正在建立冷水管線)，點靠近哪一邊就從那一邊出發...</span>',
@@ -3742,7 +3809,7 @@ function loadLocalStorageDraft() {
         },
         'en': {
             title: 'Components Library', reset: 'Reset Layout', 
-            hint: '💡 Hint: Drag nodes to move. Click a pipe to delete it. Right-click to add a bend point. Drag the square handles at pipe ends to change which side it connects to (double-click to reset to auto).',
+            hint: '💡 Hint:\nDrag nodes to move. Click a pipe to delete it. Right-click to add a bend point. Drag the square handles at pipe ends to change which side it connects to (double-click to reset to auto).',
             deleteNodeConfirm: 'Delete this component?\n(Connected pipelines will also be removed)',
             deletePipeConfirm: 'Delete this pipeline?',
             coldPipeStart: '<span style="color:var(--cold-pipe);">Select first component (Routing Cold Pipe) — click near the edge you want it to exit from...</span>',
