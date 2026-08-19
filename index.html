@@ -259,6 +259,15 @@
             vertical-align: middle;
         }
 
+        /* O&M Control Parameters 矩陣：內容欄位需要一行內完整顯示，不換行 */
+        #omTable td {
+            white-space: nowrap;
+        }
+        #omTable td input.form-control {
+            width: 100%;
+            min-width: 0;
+        }
+
         table.data-table tr:nth-child(even) {
             background-color: #fafbfc;
         }
@@ -431,7 +440,6 @@
             margin-top: auto;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -441,11 +449,10 @@
         <p>AI Cooling Energy Saving Solution - Field Data Collection & Schema Builder</p>
     </div>
     <div class="header-actions">
-        <button class="btn btn-danger-outline" onclick="resetEntireProject()">🔄 重設表單 (Reset)</button>
-        <button class="btn btn-secondary" onclick="exportProjectZip()">💾 匯出專案 ZIP 封包 (.zip)</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()">📂 載入專案 (.zip / .json)</button>
-        <input type="file" id="importFileInput" accept=".zip,.json,.txt" style="display:none;" onchange="importProjectFile(event)">
-        <button class="btn btn-primary" onclick="exportMasterJSON()">🚀 匯出 AI Master JSON</button>
+        <button class="btn btn-danger-outline" onclick="resetEntireProject()">🔄 重設表單</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()">📂 載入專案檔 (.json)</button>
+        <input type="file" id="importFileInput" accept=".json,.txt" style="display:none;" onchange="importProjectFile(event)">
+        <button class="btn btn-primary" onclick="exportProjectFile()">💾 匯出專案檔 (.json)</button>
     </div>
 </header>
 
@@ -483,6 +490,10 @@
                     <input type="text" id="faeOwner" class="form-control" value="" placeholder="請輸入工程師姓名..." onchange="updateState()">
                 </div>
                 <div class="form-group">
+                    <label>City / 城市</label>
+                    <input type="text" id="city" class="form-control" value="" placeholder="請輸入城市名稱..." onchange="updateState()">
+                </div>
+                <div class="form-group">
                     <label>Survey Date / 勘查日期</label>
                     <input type="date" id="surveyDate" class="form-control" value="" onchange="updateState()">
                 </div>
@@ -491,7 +502,7 @@
 
         <div class="card">
             <div class="card-header">
-                <span class="card-title">機房清單 (Room List)</span>
+                <span class="card-title">Room List / 機房清單</span>
                 <button class="btn btn-outline btn-sm" onclick="addRoom()">＋ 新增 Room</button>
             </div>
             <div style="overflow-x: auto; width: 100%;">
@@ -502,7 +513,7 @@
                             <th>Room Name / 機房名稱</th>
                             <th>Scenario / 場域情境</th>
                             <th>Total Zones / 涵蓋區域數</th>
-                            <th>操作</th>
+                            <th>Setting / 設定</th>
                         </tr>
                     </thead>
                     <tbody id="roomTableBody">
@@ -532,11 +543,12 @@
     <div id="hvac" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <span class="card-title">HVAC Topology Diagram / 水路與空調系統架構</span>
+                <span class="card-title">HVAC Diagram / HVAC 系統圖</span>
             </div>
 
             <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
-                直接在下方畫布拖拉元件、連接冷/熱水管線建立架構圖；若已有既有的架構圖 JSON 檔案，也可以用畫布工具列的「Import JSON」按鈕或直接拖曳檔案到畫布上載入，繼續編輯。完成後點擊「套用架構圖到 Cooling Units」，系統會自動解析並將灰區設備 (Chiller, Pump, Cooling Tower 等) 連動同步至 Cooling Units List。
+                直接在下方畫布拖拉元件、連接冷/熱水管線建立架構圖；若已有既有的架構圖 JSON 檔案，也可以用畫布工具列的「Import JSON」按鈕或直接拖曳檔案到畫布上載入，繼續編輯。完成後點擊「套用架構圖到 Cooling Units」，系統會自動解析並將灰區設備 (Chiller, Pump, Cooling Tower 等) 連動同步至 Cooling Units List。<br>
+                Drag components directly onto the canvas below and connect the chilled/hot water piping to build the diagram. If you already have an existing diagram JSON file, you can also use the "Import JSON" button on the canvas toolbar, or drag and drop the file onto the canvas to load it and continue editing. When finished, click "Apply Diagram to Cooling Units" — the system will automatically parse the diagram and sync grey-space equipment (Chiller, Pump, Cooling Tower, etc.) to the Cooling Units List.
             </p>
 
             <div class="hvac-builder-frame-outer">
@@ -552,8 +564,8 @@
             </div>
 
             <div class="hvac-apply-bar">
-                <button type="button" class="btn btn-primary" onclick="applyHvacBuilderDiagram()">✅ 套用架構圖到 Cooling Units</button>
-                <span style="font-size:0.82rem; color: var(--text-muted);">在畫布上完成繪製或載入後，需點擊此按鈕才會將架構圖同步進本頁面；點擊前的畫布內容不會自動儲存。</span>
+                <button type="button" class="btn btn-primary" onclick="applyHvacBuilderDiagram()">✅ Apply Diagram to Cooling Units / 套用架構圖到 Cooling Units</button>
+                <span style="font-size:0.82rem; color: var(--text-muted);">在畫布上完成繪製或載入後，需點擊此按鈕才會將架構圖同步進本頁面；點擊前的畫布內容不會自動儲存。<br>After you finish drawing or loading on the canvas, click this button to sync the diagram into this page; canvas content is not saved automatically before you click it.</span>
             </div>
         </div>
     </div>
@@ -569,13 +581,13 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Space / 區域</th>
+                            <th>Category / 類型</th>
                             <th>Room ID / 機房編號</th>
-                            <th>Adjacent Zone / Hot Aisle</th>
                             <th>Equipment Type / 設備類型</th>
                             <th>Equipment ID / 設備編號</th>
+                            <th>Adjacent Hot Aisle (Zone) / 鄰近熱通道 (區域)</th>
                             <th>Equipment Model / 品牌+型號</th>
-                            <th>操作</th>
+                            <th>Setting / 設定</th>
                         </tr>
                     </thead>
                     <tbody id="coolingUnitsBody">
@@ -607,12 +619,12 @@
                 <span class="card-title">Rack Survey / 機櫃盤點表</span>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <div id="rackBatchToolbar" style="display:flex; gap:8px; align-items:center;">
-                        <span id="selectedRackCount" style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">已選取 0 項</span>
-                        <button class="btn btn-outline btn-sm" onclick="batchDuplicateRacks()">⚡ 批量複製所選</button>
-                        <button class="btn btn-danger btn-sm" onclick="batchDeleteRacks()">🗑️ 批量刪除所選</button>
+                        <span id="selectedRackCount" style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Selected 0 items</span>
+                        <button class="btn btn-outline btn-sm" onclick="batchDuplicateRacks()">⚡ Duplicate Selected</button>
+                        <button class="btn btn-danger btn-sm" onclick="batchDeleteRacks()">🗑️ Delete Selected</button>
                     </div>
-                    <button class="btn btn-outline btn-sm" onclick="openBatchRackModal()">⚡ 批量新增機櫃</button>
-                    <button class="btn btn-outline btn-sm" onclick="addRackRow()">＋ 新增單筆</button>
+                    <button class="btn btn-outline btn-sm" onclick="openBatchRackModal()">⚡ Batch Add Racks</button>
+                    <button class="btn btn-outline btn-sm" onclick="addRackRow()">＋ Add Single Row</button>
                 </div>
             </div>
             <div style="overflow-x: auto; width: 100%;">
@@ -620,13 +632,14 @@
                     <thead>
                         <tr>
                             <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAllRacks" onchange="toggleSelectAllRacks(this)"></th>
-                            <th>Room ID</th>
-                            <th>Zone ID</th>
-                            <th>Rack No.</th>
-                            <th>Design Power Capacity (kW)</th>
+                            <th>Room ID / 機房編號</th>
+                            <th>Zone ID / 區域編號</th>
+                            <th style="width:90px;">Rack No.</th>
+                            <th>Design Power Capacity (kW) / 設計功率容量 (kW)</th>
+                            <th>Rack Height (cm) / 機櫃高度 (cm)</th>
                             <th>Rack ID (Auto)</th>
                             <th>High Density (>=20kW)</th>
-                            <th>操作</th>
+                            <th>Setting</th>
                         </tr>
                     </thead>
                     <tbody id="rackTableBody">
@@ -641,23 +654,23 @@
     <div id="sensors" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <span class="card-title">Sensors List / 感測器列表</span>
+                <span class="card-title">White Space Sensors List / 白區感測器列表</span>
                 <div>
-                    <button class="btn btn-outline btn-sm" onclick="autoGenerateRackSensors()">⚡ 一鍵生成標準感測器</button>
-                    <button class="btn btn-outline btn-sm" onclick="addSensorRow()">＋ 新增單筆</button>
+                    <button class="btn btn-outline btn-sm" onclick="autoGenerateRackSensors()">⚡ Auto-Generate Standard Sensors</button>
+                    <button class="btn btn-outline btn-sm" onclick="addSensorRow()">＋ Add Single Row</button>
                 </div>
             </div>
             <div style="overflow-x: auto; width: 100%;">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Sensor Type / 類型</th>
-                            <th>Sensor ID</th>
+                            <th style="width:230px;">Sensor Type / 類型</th>
+                            <th style="width:120px;">Sensor ID / 感測器編號</th>
                             <th>Attachment / 依附物</th>
-                            <th>Rack ID</th>
-                            <th>Inlet or Outlet</th>
+                            <th>Rack ID / 機櫃編號</th>
+                            <th>Inlet or Outlet / 進風或回風</th>
                             <th>Remarks / 備註</th>
-                            <th>操作</th>
+                            <th>Setting / 設定</th>
                         </tr>
                     </thead>
                     <tbody id="sensorTableBody">
@@ -672,13 +685,16 @@
     <div id="io-table" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <span class="card-title">Data Points Requirement / 點位資料需求表 (I/O Table)</span>
-                <button class="btn btn-outline btn-sm" onclick="exportIoTableCsv()">📥 匯出 I/O Table CSV</button>
+                <span class="card-title">I/O Table / 點位資料需求表</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-outline btn-sm" onclick="exportIoTableCsv()">📥 Export Current Tab CSV</button>
+                    <button class="btn btn-outline btn-sm" onclick="exportAllIoTablesCsv()">📥 Export All 3 Tabs (Combined CSV)</button>
+                </div>
             </div>
             <div class="sub-tab-nav">
-                <button class="sub-tab-btn active" onclick="switchIoTab('white-cooling', this)">❄️ White Space Cooling</button>
-                <button class="sub-tab-btn" onclick="switchIoTab('gray-cooling', this)">🏭 Grey Space Cooling</button>
-                <button class="sub-tab-btn" onclick="switchIoTab('rack-io', this)">🖥️ Rack Telemetry</button>
+                <button class="sub-tab-btn active" onclick="switchIoTab('white-cooling', this)">White Space</button>
+                <button class="sub-tab-btn" onclick="switchIoTab('gray-cooling', this)">Grey Space</button>
+                <button class="sub-tab-btn" onclick="switchIoTab('rack-io', this)">Rack</button>
             </div>
 
             <div id="ioTableContent" style="overflow-x: auto;">
@@ -693,22 +709,22 @@
             <div class="card-header">
                 <span class="card-title">O&M Control Parameters / 營運與 AI 控制邊界矩陣</span>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-outline btn-sm" onclick="applyAshraeToAllRacks()">⚡ 套用 ASHRAE 建議值至所有機櫃</button>
-                    <button class="btn btn-outline btn-sm" onclick="applyFirstRackOmToAll()">⚡ 將首台機櫃參數套用至所有機櫃</button>
-                    <button class="btn btn-outline btn-sm" onclick="exportOmCsv()">📥 匯出 O&M CSV</button>
+                    <button class="btn btn-outline btn-sm" onclick="applyAshraeToAllRacks()">⚡ Apply ASHRAE Recommended Values to All Racks</button>
+                    <button class="btn btn-outline btn-sm" onclick="applyFirstRackOmToAll()">⚡ Apply First Rack's Parameters to All Racks</button>
+                    <button class="btn btn-outline btn-sm" onclick="exportOmCsv()">📥 Export O&M CSV</button>
                 </div>
             </div>
             <div style="overflow-x: auto; width: 100%;">
-                <table class="data-table">
+                <table class="data-table" id="omTable">
                     <thead>
                         <tr>
                             <th>Type / 條件類型</th>
                             <th>Item / 項目</th>
                             <th>Item ID / 項目 ID</th>
                             <th>Constraints / 限制參數</th>
-                            <th>Suggested Value / 建議值</th>
-                            <th>Upper Limit / 上限</th>
-                            <th>Lower Limit / 下限</th>
+                            <th style="width:150px;">Suggested Value / 建議值</th>
+                            <th style="width:130px;">Upper Limit / 上限</th>
+                            <th style="width:130px;">Lower Limit / 下限</th>
                         </tr>
                     </thead>
                     <tbody id="omTableBody">
@@ -744,6 +760,10 @@
             <label>預設設計電力容量 (kW)</label>
             <input type="number" id="batchPower" class="form-control" value="20">
         </div>
+        <div class="form-group" style="margin-bottom:1.5rem;">
+            <label>預設機櫃高度 (cm)</label>
+            <input type="number" id="batchRackHeight" class="form-control" value="200">
+        </div>
         <div style="display:flex; justify-content:flex-end; gap:10px;">
             <button class="btn btn-outline btn-sm" onclick="closeBatchRackModal()">取消</button>
             <button class="btn btn-primary btn-sm" onclick="executeBatchRack()">確認新增</button>
@@ -759,10 +779,11 @@
 // --- EMPTY STATE GENERATOR ---
 function getEmptyState() {
     return {
-        siteInfo: { clientName: "", siteId: "", faeOwner: "", surveyDate: "" },
+        siteInfo: { clientName: "", siteId: "", faeOwner: "", city: "", surveyDate: "" },
         rooms: [],
         hvacJson: "", hvacFileName: "",
         coolingUnits: [], racks: [], sensors: [],
+        ioTableMeta: {},
         activeRoomTab: 0, activeIoTab: "white-cooling", activeCoolingSpecTab: "white"
     };
 }
@@ -998,11 +1019,16 @@ window.onload = function() {
 
 function sanitizeState() {
     if (!state) state = {};
-    if (!state.siteInfo) state.siteInfo = { clientName: "", siteId: "", faeOwner: "", surveyDate: "" };
+    if (!state.siteInfo) state.siteInfo = { clientName: "", siteId: "", faeOwner: "", city: "", surveyDate: "" };
     if (!Array.isArray(state.rooms)) state.rooms = [];
     if (!Array.isArray(state.coolingUnits)) state.coolingUnits = [];
     if (!Array.isArray(state.racks)) state.racks = [];
     if (!Array.isArray(state.sensors)) state.sensors = [];
+    if (!state.ioTableMeta || typeof state.ioTableMeta !== 'object') state.ioTableMeta = {};
+
+    state.racks.forEach(r => {
+        if (r.rackHeightCm === undefined || r.rackHeightCm === null) r.rackHeightCm = 200;
+    });
     
     state.rooms.forEach(r => {
         if (r.zones) {
@@ -1034,6 +1060,7 @@ function syncFormInputs() {
     setVal('clientName', state.siteInfo.clientName);
     setVal('siteId', state.siteInfo.siteId);
     setVal('faeOwner', state.siteInfo.faeOwner);
+    setVal('city', state.siteInfo.city);
     setVal('surveyDate', state.siteInfo.surveyDate);
     renderHvacInfo();
 }
@@ -1054,6 +1081,7 @@ function updateState() {
     state.siteInfo.clientName = document.getElementById('clientName').value;
     state.siteInfo.siteId = document.getElementById('siteId').value;
     state.siteInfo.faeOwner = document.getElementById('faeOwner').value;
+    state.siteInfo.city = document.getElementById('city').value;
     state.siteInfo.surveyDate = document.getElementById('surveyDate').value;
     saveLocalStorageDraft();
 }
@@ -1107,7 +1135,7 @@ function renderSiteMaster() {
                 </select>
             </td>
             <td><input type="number" class="form-control" min="1" step="1" value="${r.totalZones}" onchange="updateRoom(${idx}, 'totalZones', this.value)"></td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteRoom(${idx})">刪除</button></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteRoom(${idx})">Delete</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -1236,23 +1264,23 @@ function renderGeometry() {
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>2D/3D CAD Files / 圖檔上傳 (可複選多檔)</label>
+                    <label>2D/3D Files Upload / 2D/3D 圖檔上傳 (可上傳多檔)</label>
                     <input type="file" class="form-control" multiple accept=".dwg,.step,.stp,.pdf,.dxf,.png,.jpg,.jpeg,.zip,.rar" onchange="handleCadFileUpload(${state.activeRoomTab}, event)">
                     ${renderCadFileList(room)}
                 </div>
                 <div class="form-group">
-                    <label>機房淨高 (m)</label>
+                    <label>Room Clear Height / 機房淨高 (m)</label>
                     <input type="number" step="0.1" class="form-control" value="${room.geometry.roomHeight}" onchange="updateRoomGeo(${state.activeRoomTab}, 'roomHeight', Number(this.value))">
                 </div>
                 <div class="form-group">
-                    <label>配置高架地板?</label>
+                    <label>Raised Floor? / 配置高架地板？</label>
                     <select class="form-control" onchange="updateRoomGeo(${state.activeRoomTab}, 'hasRaisedFloor', this.value === 'true')">
                         <option value="true" ${room.geometry.hasRaisedFloor ? 'selected' : ''}>Yes / 是</option>
                         <option value="false" ${!room.geometry.hasRaisedFloor ? 'selected' : ''}>No / 否</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>高架地板高度 (m)</label>
+                    <label>Raised Floor Height / 高架地板高度 (m)</label>
                     <input type="number" step="0.1" class="form-control" value="${room.geometry.raisedFloorHeight}" ${!room.geometry.hasRaisedFloor ? 'disabled' : ''} onchange="updateRoomGeo(${state.activeRoomTab}, 'raisedFloorHeight', Number(this.value))">
                 </div>
             </div>
@@ -1266,11 +1294,11 @@ function renderGeometry() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Zone ID</th>
-                            <th>Zone Type / 屬性</th>
+                            <th>Zone ID / 區域編號</th>
+                            <th>Zone Type / 區域屬性</th>
                             <th>Containment Type / 封閉型式</th>
-                            <th>Hot Aisle Width (cm)</th>
-                            <th>Photo URL</th>
+                            <th>Hot Aisle Width (cm) / 熱通道寬度 (公分)</th>
+                            <th>Photo URL / 照片連結</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1284,15 +1312,15 @@ function renderGeometry() {
                                 </td>
                                 <td>
                                     <select class="form-control" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'zoneType', this.value)">
-                                        <option ${z.zoneType === '一般伺服器區' ? 'selected' : ''}>一般伺服器區</option>
-                                        <option ${z.zoneType === '高密度機櫃區' ? 'selected' : ''}>高密度機櫃區</option>
+                                        <option ${z.zoneType === '一般伺服器區' ? 'selected' : ''}>一般伺服器區/Standard</option>
+                                        <option ${z.zoneType === '高密度機櫃區' ? 'selected' : ''}>高密度機櫃區/High Density</option>
                                     </select>
                                 </td>
                                 <td>
                                     <select class="form-control" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'containmentType', this.value)">
-                                        <option ${z.containmentType === 'Hot Aisle Containment' ? 'selected' : ''}>Hot Aisle Containment</option>
-                                        <option ${z.containmentType === 'Cold Aisle Containment' ? 'selected' : ''}>Cold Aisle Containment</option>
-                                        <option ${z.containmentType === 'Open' ? 'selected' : ''}>Open / 無封閉</option>
+                                        <option ${z.containmentType === 'Hot Aisle Containment' ? 'selected' : ''}>Hot Aisle Containment/熱通道封閉</option>
+                                        <option ${z.containmentType === 'Cold Aisle Containment' ? 'selected' : ''}>Cold Aisle Containment/冷通道封閉</option>
+                                        <option ${z.containmentType === 'Open' ? 'selected' : ''}>Open/無封閉</option>
                                     </select>
                                 </td>
                                 <td><input type="number" class="form-control" value="${z.hotAisleWidth}" onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'hotAisleWidth', Number(this.value))"></td>
@@ -1319,7 +1347,10 @@ function renderCadFileList(room) {
             ${files.map((f, fIdx) => `
                 <div style="font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; justify-content:space-between; background:#f4f5f7; padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);">
                     <span>📎 <strong>${f.fileName}</strong>${f.loading ? ' <span style="color:var(--text-muted);">（讀取中…）</span>' : (f.loadError ? ' <span style="color:var(--danger);">（讀取失敗）</span>' : '')}</span>
-                    <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
+                    <span style="display:flex; gap:4px; flex-shrink:0;">
+                        ${(!f.loading && !f.loadError) ? `<button class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="downloadSingleCadFile(${state.activeRoomTab}, ${fIdx})" title="直接下載這份原始檔（不經過 ZIP，不會被 Windows 封鎖）">下載</button>` : ''}
+                        <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
+                    </span>
                 </div>
             `).join('')}
         </div>
@@ -1336,10 +1367,20 @@ function handleCadFileUpload(roomIdx, event) {
     if (!Array.isArray(room.geometry.cadFiles)) room.geometry.cadFiles = [];
 
     /*
+     * 先把 FileList 轉成靜態陣列複本。
+     * 注意：event.target.files 是「即時 (live)」的 FileList，一旦下面把 input.value 清空，
+     * 這個 FileList 也會立刻變空；若稍後的非同步讀檔迴圈仍去索引原本的 fileList，
+     * 會拿到 undefined，導致 FileReader 讀取失敗、loading 狀態卡住、fileData 永遠是空字串
+     * (這正是先前「一直顯示讀取中」以及「匯出 ZIP 內找不到上傳檔案」的根本原因)。
+     * 因此這裡改用 Array.from() 產生的靜態陣列 filesArray 來保存 File 物件參照。
+     */
+    const filesArray = Array.from(fileList);
+
+    /*
      * 先把檔名立即寫入 state 並重新繪製 UI，再非同步讀取檔案內容。
      * 如此一來，使用者上傳後會立刻看到「已上傳」清單，不必切換頁籤才更新畫面。
      */
-    const pendingEntries = Array.from(fileList).map(file => ({
+    const pendingEntries = filesArray.map(file => ({
         fileName: file.name,
         fileData: '',
         loading: true
@@ -1348,11 +1389,12 @@ function handleCadFileUpload(roomIdx, event) {
     room.geometry.cadFiles.push(...pendingEntries);
     renderGeometry();
 
-    /* 清掉 input，讓同一個檔案之後仍可再次選取。 */
+    /* 清掉 input，讓同一個檔案之後仍可再次選取。此動作會清空 event.target.files，
+       但不會影響上面已經複製好的 filesArray。 */
     event.target.value = '';
 
     pendingEntries.forEach((entry, localIdx) => {
-        const file = fileList[localIdx];
+        const file = filesArray[localIdx];
         const reader = new FileReader();
         reader.onload = function(e) {
             entry.fileData = e.target.result;
@@ -1369,6 +1411,46 @@ function handleCadFileUpload(roomIdx, event) {
         };
         reader.readAsDataURL(file);
     });
+}
+
+/*
+ * 直接把 dataURL (base64) 轉成 Blob 後觸發下載，完全不經過 ZIP 壓縮/解壓縮流程。
+ * 因為不是透過「壓縮資料夾解壓縮」這個路徑產生的檔案，不會觸發 Windows 對 zip 內附件的
+ * 安全性原則封鎖（該封鎖行為主要發生在 Windows Explorer 解壓縮 zip 的當下）。
+ */
+function dataUrlToBlob(dataUrl) {
+    const [header, base64] = dataUrl.split(',');
+    const mimeMatch = header.match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+}
+
+function downloadSingleCadFile(roomIdx, fileIdx) {
+    const room = state.rooms[roomIdx];
+    const file = room && room.geometry && room.geometry.cadFiles && room.geometry.cadFiles[fileIdx];
+    if (!file || !file.fileData) {
+        alert('⚠️ 這個檔案尚未讀取完成或讀取失敗，無法下載。');
+        return;
+    }
+    try {
+        const blob = dataUrlToBlob(file.fileData);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+        console.error('下載附件失敗：', err);
+        alert('⚠️ 下載這個檔案時發生錯誤，請確認檔案是否正常。');
+    }
 }
 
 function removeCadFile(roomIdx, fileIdx) {
@@ -1778,21 +1860,21 @@ function renderCoolingUnits() {
                 </select>
             </td>
             <td>
-                <select class="form-control" ${isGrey ? 'disabled style="background:#f4f5f7;"' : ''} onchange="updateCoolingZone(${idx}, this.value)">
-                    ${isGrey ? '<option value="-">-</option>' : currentRoomZones.map(z => `<option value="${z.zoneId}" ${(u.zoneId === z.zoneId || (u.adjacentHotAisle && u.adjacentHotAisle.includes(z.zoneId))) ? 'selected' : ''}>Hot Aisle ${z.zoneId} (Zone ${z.zoneId})</option>`).join('')}
-                </select>
-            </td>
-            <td>
                 <select class="form-control" onchange="updateCoolingType(${idx}, this.value)">
                     ${currentOptions.map(opt => `<option value="${opt}" ${selectedType === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                 </select>
             </td>
             <td><input type="text" class="form-control" value="${u.equipmentId || ''}" onchange="updateCooling(${idx}, 'equipmentId', this.value)"></td>
+            <td>
+                <select class="form-control" style="width:100%; min-width:0;${isGrey ? ' background:#f4f5f7;' : ''}" ${isGrey ? 'disabled' : ''} onchange="updateCoolingZone(${idx}, this.value)">
+                    ${isGrey ? '<option value="-">-</option>' : currentRoomZones.map(z => `<option value="${z.zoneId}" ${(u.zoneId === z.zoneId || (u.adjacentHotAisle && u.adjacentHotAisle.includes(z.zoneId))) ? 'selected' : ''}>Hot Aisle ${z.zoneId} (Zone ${z.zoneId})</option>`).join('')}
+                </select>
+            </td>
             <td><input type="text" class="form-control" placeholder="品牌+型號" value="${u.model || ''}" onchange="updateCooling(${idx}, 'model', this.value)"></td>
             <td style="white-space:nowrap;">
                 <button class="btn btn-outline btn-sm" onclick="moveCoolingUnit(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} style="padding:1px 6px;" title="上移">▲</button>
                 <button class="btn btn-outline btn-sm" onclick="moveCoolingUnit(${idx}, 1)" ${idx === state.coolingUnits.length - 1 ? 'disabled' : ''} style="padding:1px 6px;" title="下移">▼</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteCooling(${idx})" style="padding:1px 8px;">刪除</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteCooling(${idx})" style="padding:1px 8px;">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -2098,13 +2180,14 @@ function renderRackSurvey() {
                     ${getZoneOptionsForRoom(r.roomId).map(z => `<option ${r.zoneId === z ? 'selected' : ''}>${z}</option>`).join('')}
                 </select>
             </td>
-            <td><input type="number" class="form-control" value="${r.rackNo}" onchange="updateRack(${idx}, 'rackNo', Number(this.value))"></td>
-            <td><input type="number" class="form-control" value="${r.powerCapacityKw}" onchange="updateRack(${idx}, 'powerCapacityKw', Number(this.value))"></td>
+            <td><input type="number" class="form-control" style="width:100%; min-width:0;" value="${r.rackNo}" onchange="updateRack(${idx}, 'rackNo', Number(this.value))"></td>
+            <td><input type="number" class="form-control" style="width:100%; min-width:0;" value="${r.powerCapacityKw}" onchange="updateRack(${idx}, 'powerCapacityKw', Number(this.value))"></td>
+            <td><input type="number" class="form-control" style="width:100%; min-width:0;" value="${r.rackHeightCm ?? 200}" onchange="updateRack(${idx}, 'rackHeightCm', Number(this.value))"></td>
             <td><strong>${computedRackId}</strong></td>
             <td>${isHighDensity ? '<span class="badge badge-danger">V (High Density)</span>' : '<span style="color:#aaa;">-</span>'}</td>
             <td style="white-space:nowrap;">
                 <button class="btn btn-outline btn-sm" onclick="duplicateRack(${idx})" style="padding:2px 6px; font-size:0.75rem;" title="複製單筆">📋</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteRack(${idx})" style="padding:2px 6px; font-size:0.75rem;">刪除</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteRack(${idx})" style="padding:2px 6px; font-size:0.75rem;">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -2146,7 +2229,7 @@ function addRackRow() {
         nextNo++;
     }
 
-    state.racks.push({ roomId: firstRoom, zoneId: firstZone, rackNo: nextNo, powerCapacityKw: 20 });
+    state.racks.push({ roomId: firstRoom, zoneId: firstZone, rackNo: nextNo, powerCapacityKw: 20, rackHeightCm: 200 });
     renderRackSurvey();
     renderSensorsList();
     renderIoTable();
@@ -2176,7 +2259,8 @@ function duplicateRack(idx) {
         roomId: source.roomId,
         zoneId: source.zoneId,
         rackNo: nextNo,
-        powerCapacityKw: source.powerCapacityKw
+        powerCapacityKw: source.powerCapacityKw,
+        rackHeightCm: source.rackHeightCm
     };
 
     state.racks.splice(idx + 1, 0, cloned);
@@ -2212,13 +2296,14 @@ function executeBatchRack() {
     const zoneId = document.getElementById('batchZoneSelect').value;
     const count = Number(document.getElementById('batchCount').value);
     const power = Number(document.getElementById('batchPower').value);
+    const rackHeight = Number(document.getElementById('batchRackHeight').value);
 
     for (let i = 1; i <= count; i++) {
         let nextNo = 1;
         while (state.racks.some(r => `${r.zoneId}-R${r.rackNo}`.toLowerCase() === `${zoneId}-R${nextNo}`.toLowerCase())) {
             nextNo++;
         }
-        state.racks.push({ roomId, zoneId, rackNo: nextNo, powerCapacityKw: power });
+        state.racks.push({ roomId, zoneId, rackNo: nextNo, powerCapacityKw: power, rackHeightCm: rackHeight });
     }
 
     closeBatchRackModal();
@@ -2237,7 +2322,7 @@ function updateRackSelection() {
     const checked = document.querySelectorAll('.rack-checkbox:checked');
     const countSpan = document.getElementById('selectedRackCount');
     if (countSpan) {
-        countSpan.innerText = `已選取 ${checked.length} / ${checkboxes.length} 項`;
+        countSpan.innerText = `Selected ${checked.length} / ${checkboxes.length} items`;
     }
 }
 
@@ -2266,7 +2351,8 @@ function batchDuplicateRacks() {
             roomId: source.roomId,
             zoneId: source.zoneId,
             rackNo: nextNo,
-            powerCapacityKw: source.powerCapacityKw
+            powerCapacityKw: source.powerCapacityKw,
+            rackHeightCm: source.rackHeightCm
         };
         state.racks.splice(idx + 1, 0, cloned);
     });
@@ -2344,13 +2430,13 @@ function renderSensorsList() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
-                <select class="form-control" onchange="updateSensorType(${idx}, this.value)">
+                <select class="form-control" style="width:100%; min-width:0;" onchange="updateSensorType(${idx}, this.value)">
                     <option value="Temperature Sensor" ${s.sensorType === 'Temperature Sensor' ? 'selected' : ''}>Temperature Sensor</option>
                     <option value="Humidity Sensor" ${s.sensorType === 'Humidity Sensor' ? 'selected' : ''}>Humidity Sensor</option>
                     <option value="Temperature & Humidity Sensor" ${s.sensorType === 'Temperature & Humidity Sensor' || s.sensorType === 'Temp/Humidity Sensor' ? 'selected' : ''}>Temperature & Humidity Sensor</option>
                 </select>
             </td>
-            <td><input type="text" class="form-control" value="${s.sensorId}" onchange="updateSensor(${idx}, 'sensorId', this.value)"></td>
+            <td><input type="text" class="form-control" style="width:100%; min-width:0;" value="${s.sensorId}" onchange="updateSensor(${idx}, 'sensorId', this.value)"></td>
             <td>
                 <select class="form-control" onchange="updateSensor(${idx}, 'attachment', this.value)">
                     <option ${s.attachment === 'Rack' ? 'selected' : ''}>Rack</option>
@@ -2370,7 +2456,7 @@ function renderSensorsList() {
                 </select>
             </td>
             <td><input type="text" class="form-control" value="${s.remarks}" onchange="updateSensor(${idx}, 'remarks', this.value)"></td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteSensor(${idx})">刪除</button></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteSensor(${idx})">Delete</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -2548,16 +2634,30 @@ const COOLING_TOWER_IO_POINTS = [
 ];
 
 const ENVIRONMENT_IO_POINTS = [
-    { dataPoint: "Outdoor Wet Bulb Temperature / 室內/室外濕球溫度", unit: "°C" },
-    { dataPoint: "Outdoor Dry Bulb Temperature / 室內/室外乾球溫度", unit: "°C" }
+    { dataPoint: "Outdoor Wet Bulb Temperature / 室外濕球溫度", unit: "°C" },
+    { dataPoint: "Outdoor Dry Bulb Temperature / 室外乾球溫度", unit: "°C" }
 ];
 
-function renderIoTable() {
-    const container = document.getElementById('ioTableContent');
-    if (!container) return;
+// I/O Table 每一列並非固定存於 state 中的實體物件 (是由 racks/sensors/coolingUnits 即時運算產生)，
+// 因此若要讓 variable_name / units / variable_index / time_index / data_types / multiplier / remark
+// 這些額外設定欄位能夠持久保存，改用「內容組合成唯一 key」的方式，另外存放於 state.ioTableMeta 中。
+function ioRowKey(r) {
+    return `${r.region}|${r.item}|${r.id}|${r.dataPoint}`;
+}
+
+function updateIoMeta(metaKey, field, val) {
+    if (!state.ioTableMeta) state.ioTableMeta = {};
+    if (!state.ioTableMeta[metaKey]) state.ioTableMeta[metaKey] = {};
+    state.ioTableMeta[metaKey][field] = val;
+    saveLocalStorageDraft();
+}
+
+// 依指定的 I/O Table 子頁籤 (white-cooling / gray-cooling / rack-io) 產生對應的資料列陣列。
+// 拆成獨立函式，讓「單頁渲染」與「三頁彙整匯出」可以共用同一套產生邏輯，不需要依賴目前畫面上顯示的是哪一頁。
+function getIoRowsForTab(tabId) {
     let rows = [];
 
-    if (state.activeIoTab === 'white-cooling') {
+    if (tabId === 'white-cooling') {
         state.coolingUnits.filter(u => !u.space.includes('Grey') && !u.space.includes('灰區')).forEach(u => {
             const eqType = (u.equipmentType || '').split(' / ')[0].trim();
             const isStandardAirOrWater = ['Row Cool (CW)', 'Row Cool (DX)', 'CRAC', 'CRAH'].some(t => eqType.includes(t));
@@ -2579,7 +2679,24 @@ function renderIoTable() {
             }
         });
 
-    } else if (state.activeIoTab === 'gray-cooling') {
+        // 白區 Cold Aisle / Hot Aisle 溫濕度感測器：依 Sensor List 中的設定產生對應點位
+        // (這些感測器並非依附特定機櫃，而是依附整個 Zone，rackId 欄位僅作為 Zone 歸屬的參考值)
+        state.sensors.filter(s => s.attachment === 'Cold Aisle' || s.attachment === 'Hot Aisle').forEach(s => {
+            const zoneId = (s.rackId || '').replace(/-R\d+$/, '') || '?';
+            const aisleLabel = s.attachment === 'Cold Aisle' ? 'Cold Aisle' : 'Hot Aisle';
+            const aisleLabelZh = s.attachment === 'Cold Aisle' ? '冷通道' : '熱通道';
+            const wantsTemp = s.sensorType !== 'Humidity Sensor';
+            const wantsHum = s.sensorType === 'Humidity Sensor' || s.sensorType === 'Temperature & Humidity Sensor' || s.sensorType === 'Temp/Humidity Sensor';
+
+            if (wantsTemp) {
+                rows.push({ region: "White Space / 白區", item: `${aisleLabel} Sensor / ${aisleLabelZh}感測器`, id: s.sensorId, dataPoint: `${aisleLabel} Temperature (Zone ${zoneId}) / ${aisleLabelZh}溫度`, unit: "°C", custom: false });
+            }
+            if (wantsHum) {
+                rows.push({ region: "White Space / 白區", item: `${aisleLabel} Sensor / ${aisleLabelZh}感測器`, id: s.sensorId, dataPoint: `${aisleLabel} Humidity (Zone ${zoneId}) / ${aisleLabelZh}濕度`, unit: "%", custom: false });
+            }
+        });
+
+    } else if (tabId === 'gray-cooling') {
         state.coolingUnits.filter(u => u.space.includes('Grey') || u.space.includes('灰區')).forEach(u => {
             const eqType = (u.equipmentType || '').split(' / ')[0].trim();
             if (eqType.includes('Pump')) {
@@ -2599,11 +2716,11 @@ function renderIoTable() {
             }
         });
 
-        ENVIRONMENT_IO_POINTS.forEach(pt => {
-            rows.push({ region: "Grey Space / 灰區", item: "Environment / 環境", id: "ENV_01", dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
+        ENVIRONMENT_IO_POINTS.forEach((pt, ptIdx) => {
+            rows.push({ region: "Grey Space / 灰區", item: "Environment / 環境", id: `ENV_${String(ptIdx + 1).padStart(2, '0')}`, dataPoint: pt.dataPoint, unit: pt.unit, custom: false });
         });
 
-    } else if (state.activeIoTab === 'rack-io') {
+    } else if (tabId === 'rack-io') {
         state.racks.forEach(r => {
             const rId = `${r.zoneId}-R${r.rackNo}`;
             rows.push({ region: "White Space / 白區", item: "Rack / 機櫃", id: rId, dataPoint: "Input Voltage / 輸入電壓", unit: "V", custom: false });
@@ -2629,6 +2746,16 @@ function renderIoTable() {
         });
     }
 
+    return rows;
+}
+
+function renderIoTable() {
+    const container = document.getElementById('ioTableContent');
+    if (!container) return;
+    if (!state.ioTableMeta) state.ioTableMeta = {};
+
+    const rows = getIoRowsForTab(state.activeIoTab);
+
     container.innerHTML = `
         <div style="margin-bottom:10px; font-size:0.85rem; color:var(--text-muted);">
             💡 針對 CDU 或特殊白區設備，您可以在下方表格中自由新增與定義自定義點位。
@@ -2636,33 +2763,47 @@ function renderIoTable() {
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Area / 區域</th>
-                    <th>Items / 項目</th>
-                    <th>Equipment ID / Sensor ID</th>
-                    <th>Data Point / 資料點位</th>
-                    <th>Unit / 單位</th>
-                    <th>IP / Protocol Metadata (SCADA)</th>
-                    <th>操作</th>
+                    <th style="width:320px;">Items / 項目</th>
+                    <th>Equipment/Sensor ID</th>
+                    <th style="width:600px;">Data Point / 資料點位</th>
+                    <th style="width:70px;">Unit / 單位</th>
+                    <th style="width:150px;">variable_name</th>
+                    <th style="width:80px;">units</th>
+                    <th style="width:100px;">variable_index</th>
+                    <th style="width:100px;">time_index</th>
+                    <th style="width:110px;">data_types</th>
+                    <th style="width:90px;">multiplier</th>
+                    <th style="width:160px;">remark</th>
+                    <th>Setting / 設定</th>
                 </tr>
             </thead>
             <tbody>
-                ${rows.map((r, rIdx) => `
+                ${rows.map((r, rIdx) => {
+                    const metaKey = ioRowKey(r);
+                    const meta = state.ioTableMeta[metaKey] || {};
+                    const metaField = (field, placeholder, type) => `<input type="${type || 'text'}" class="form-control" style="width:100%; min-width:0;" placeholder="${placeholder || ''}" value="${meta[field] || ''}" onchange="updateIoMeta('${metaKey}', '${field}', this.value)">`;
+                    return `
                     <tr>
-                        <td>${r.region}</td>
-                        <td>${r.item}</td>
+                        <td style="white-space:nowrap;">${r.item}</td>
                         <td><strong>${r.id}</strong></td>
-                        <td>
-                            ${r.custom ? `<input type="text" class="form-control" value="${r.dataPoint}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'dataPoint', this.value)">` : r.dataPoint}
+                        <td style="white-space:nowrap;">
+                            ${r.custom ? `<input type="text" class="form-control" style="width:100%; min-width:280px;" value="${r.dataPoint}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'dataPoint', this.value)">` : r.dataPoint}
                         </td>
-                        <td>
-                            ${r.custom ? `<input type="text" class="form-control" value="${r.unit}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'unit', this.value)">` : r.unit}
+                        <td style="white-space:nowrap;">
+                            ${r.custom ? `<input type="text" class="form-control" style="width:100%; min-width:0;" value="${r.unit}" onchange="updateCustomIoPoint('${r.eqId}', ${r.ptIdx}, 'unit', this.value)">` : r.unit}
                         </td>
-                        <td><input type="text" class="form-control" placeholder="192.168.x.x"></td>
+                        <td style="white-space:nowrap;">${metaField('variable_name')}</td>
+                        <td style="white-space:nowrap;">${metaField('units')}</td>
+                        <td style="white-space:nowrap;">${metaField('variable_index')}</td>
+                        <td style="white-space:nowrap;">${metaField('time_index')}</td>
+                        <td style="white-space:nowrap;">${metaField('data_types')}</td>
+                        <td style="white-space:nowrap;">${metaField('multiplier', '', 'number')}</td>
+                        <td style="white-space:nowrap;">${metaField('remark')}</td>
                         <td>
-                            ${r.custom ? `<button class="btn btn-outline btn-sm" onclick="addCustomIoPoint('${r.eqId}')" title="新增自定義點位">＋新增</button> <button class="btn btn-danger btn-sm" onclick="deleteCustomIoPoint('${r.eqId}', ${r.ptIdx})" title="刪除點位">刪除</button>` : '<span style="color:#aaa; font-size:0.75rem;">標準內建</span>'}
+                            ${r.custom ? `<button class="btn btn-outline btn-sm" onclick="addCustomIoPoint('${r.eqId}')" title="新增自定義點位">＋ Add</button> <button class="btn btn-danger btn-sm" onclick="deleteCustomIoPoint('${r.eqId}', ${r.ptIdx})" title="刪除點位">Delete</button>` : '<span style="color:#aaa; font-size:0.75rem;">Default</span>'}
                         </td>
                     </tr>
-                `).join('')}
+                `;}).join('')}
             </tbody>
         </table>
     `;
@@ -2711,6 +2852,54 @@ function exportIoTableCsv() {
     downloadFile(`ACES_IO_Table_${fileSafeSiteId}_${fileSafeSection}.csv`, '\ufeff' + csv, 'text/csv;charset=utf-8');
 }
 
+// 將 White Space Cooling / Grey Space Cooling / Rack Telemetry 三個子頁籤的資料，彙整成同一張 CSV 匯出。
+// 直接從資料模型 (getIoRowsForTab) 取得每一頁的資料列，不依賴目前畫面上顯示的是哪一頁，
+// 所以不需要切換分頁就能一次匯出全部三頁的內容。
+function exportAllIoTablesCsv() {
+    const tabs = [
+        { id: 'white-cooling', label: 'White Space Cooling' },
+        { id: 'gray-cooling', label: 'Grey Space Cooling' },
+        { id: 'rack-io', label: 'Rack Telemetry' }
+    ];
+
+    const header = [
+        'Section / 分頁', 'Items / 項目', 'Equipment/Sensor ID', 'Data Point / 資料點位', 'Unit / 單位',
+        'variable_name', 'units', 'variable_index', 'time_index', 'data_types', 'multiplier', 'remark'
+    ];
+
+    const escapeCsv = value => {
+        const text = String(value ?? '');
+        return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+
+    const csvLines = [header.map(escapeCsv).join(',')];
+    let totalRows = 0;
+
+    tabs.forEach(tab => {
+        const rows = getIoRowsForTab(tab.id);
+        rows.forEach(r => {
+            const metaKey = ioRowKey(r);
+            const meta = state.ioTableMeta[metaKey] || {};
+            const fields = [
+                tab.label, r.item, r.id, r.dataPoint, r.unit,
+                meta.variable_name || '', meta.units || '', meta.variable_index || '',
+                meta.time_index || '', meta.data_types || '', meta.multiplier || '', meta.remark || ''
+            ];
+            csvLines.push(fields.map(escapeCsv).join(','));
+            totalRows++;
+        });
+    });
+
+    if (totalRows === 0) {
+        alert('⚠️ 目前 I/O Table 沒有可匯出的資料。');
+        return;
+    }
+
+    const csv = csvLines.join('\r\n');
+    const fileSafeSiteId = (state.siteInfo.siteId || 'Project').replace(/[\\/:*?"<>|]/g, '_');
+    downloadFile(`ACES_IO_Table_${fileSafeSiteId}_All.csv`, '\ufeff' + csv, 'text/csv;charset=utf-8');
+}
+
 function addCustomIoPoint(eqId) {
     const u = state.coolingUnits.find(unit => unit.equipmentId === eqId);
     if (u) {
@@ -2747,7 +2936,7 @@ function renderOmParams() {
     // 1. 靜態唯讀 ASHRAE 參考標準列
     tbody.innerHTML += `
         <tr style="background-color: #e6fcff; color: #0052cc;">
-            <td style="font-weight: 600;">ASHRAE Standard / ASHRAE 標準</td>
+            <td style="font-weight: 600;">ASHRAE Standard</td>
             <td style="font-weight: 600;">Rack / 機櫃</td>
             <td style="font-weight: 600;">GLOBAL_RACK</td>
             <td style="font-weight: 600;">Air Inlet Temperature / 入風溫度</td>
@@ -2756,7 +2945,7 @@ function renderOmParams() {
             <td style="font-weight: 600;">18</td>
         </tr>
         <tr style="background-color: #e6fcff; color: #0052cc;">
-            <td style="font-weight: 600;">ASHRAE Standard / ASHRAE 標準</td>
+            <td style="font-weight: 600;">ASHRAE Standard</td>
             <td style="font-weight: 600;">Cold Aisle / 冷通道</td>
             <td style="font-weight: 600;">GLOBAL_AISLE</td>
             <td style="font-weight: 600;">Humidity / 濕度</td>
@@ -2885,7 +3074,7 @@ function exportOmCsv() {
 
         csv += `Control Constraint,${eqType},${u.equipmentId},${constraintName},${u.omSuggested || 22},${u.omUpper || 25},${u.omLower || 18}\n`;
     });
-    downloadFile(`ACES_OM_Parameters_${state.siteInfo.siteId || 'Project'}.csv`, csv, 'text/csv');
+    downloadFile(`ACES_OM_Parameters_${state.siteInfo.siteId || 'Project'}.csv`, '\ufeff' + csv, 'text/csv;charset=utf-8');
 }
 
 // --- VALIDATION HELPER ---
@@ -2937,150 +3126,74 @@ function validateAllIds() {
     return true;
 }
 
-// --- SAVE & LOAD PROJECT FILE (ZIP & JSON) ---
-async function exportProjectZip() {
-    if (!validateAllIds()) return;
-
-    if (typeof JSZip === 'undefined') {
-        alert('⚠️ JSZip 程式庫正在載入或未連接網路，將改為導出乾淨的 JSON 專案檔。');
-        exportProjectJson();
-        return;
-    }
-
-    const zip = new JSZip();
-    const cleanState = JSON.parse(JSON.stringify(state));
-    const attachmentsFolder = zip.folder("attachments");
-
-    if (cleanState.rooms) {
-        cleanState.rooms.forEach((room) => {
-            if (room.geometry && Array.isArray(room.geometry.cadFiles)) {
-                room.geometry.cadFiles.forEach((file) => {
-                    if (file.fileData && file.fileData.includes("base64,")) {
-                        const base64Data = file.fileData.split("base64,")[1];
-                        const safeFileName = `${room.roomId}_${file.fileName}`.replace(/[\\/:*?"<>|]/g, '_');
-                        attachmentsFolder.file(safeFileName, base64Data, {base64: true});
-                        
-                        file.zipPath = `attachments/${safeFileName}`;
-                        file.fileData = "";
-                    }
-                });
-            }
-        });
-    }
-
-    zip.file("project_data.txt", JSON.stringify(cleanState, null, 2));
-
-    try {
-        const content = await zip.generateAsync({
-            type: "blob",
-            compression: "DEFLATE",
-            compressionOptions: { level: 6 }
-        });
-        const fileName = `ACES_SiteSurvey_${state.siteInfo.siteId || 'Project'}_${state.siteInfo.surveyDate || 'Draft'}.zip`;
-        
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(content);
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    } catch(e) {
-        console.error("ZIP Generation error:", e);
-        alert("⚠️ 生成 ZIP 封包失敗，切換為導出 JSON 專案檔。");
-        exportProjectJson();
-    }
-}
-
-function exportProjectJson() {
+// --- SAVE & LOAD PROJECT FILE (JSON only) ---
+// 附件（PDF/DWG 等）已用 base64 內嵌在 JSON 文字內容裡，
+// 匯出/匯入都只有單一純文字 .json 檔，不使用 ZIP 打包，
+// 因此不會有 Windows 對「解壓縮 ZIP 內附件檔案」的安全性原則封鎖問題。
+function exportProjectFile() {
     if (!validateAllIds()) return;
     const jsonStr = JSON.stringify(state, null, 2);
-    const fileName = `ACES_SiteSurvey_${state.siteInfo.siteId || 'Project'}_${state.siteInfo.surveyDate || 'Draft'}.json`;
+    const safeClientName = (state.siteInfo.clientName || '').trim().replace(/[\\/:*?"<>|]/g, '_');
+    const clientPrefix = safeClientName ? `${safeClientName}_` : '';
+    const fileName = `ACES_SiteSurvey_${clientPrefix}${state.siteInfo.siteId || 'Project'}_${state.siteInfo.surveyDate || 'Draft'}.json`;
     downloadFile(fileName, jsonStr, 'application/json');
 }
 
-async function importProjectFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+// 若 Diagram Builder 已經載入過畫布 (hvacBuilderLoaded === true)，將目前 state.hvacJson 同步推入畫布；
+// 若沒有相容的架構圖資料，則清空畫布避免殘留舊專案內容。
+// 用於「匯入專案 JSON」等會整個替換 state 的情境，因為 iframe 的 load 事件只會觸發一次，
+// 若不主動同步，已經載入過的畫布不會自動反映新匯入的資料。
+function syncHvacCanvasWithState() {
+    const iframe = document.getElementById('hvacBuilderFrame');
+    if (!hvacBuilderLoaded || !iframe || !iframe.contentWindow) return;
 
-    const fileName = file.name.toLowerCase();
-
-    if (fileName.endsWith('.zip')) {
+    if (state.hvacJson) {
         try {
-            if (typeof JSZip === 'undefined') {
-                alert('⚠️ JSZip 程式庫未載入，請確認網路連線。');
+            const parsed = JSON.parse(state.hvacJson);
+            if (parsed && Array.isArray(parsed.components) && Array.isArray(parsed.connections) &&
+                typeof iframe.contentWindow.loadHvacBuilderData === 'function') {
+                iframe.contentWindow.loadHvacBuilderData(parsed);
                 return;
             }
-            const zip = await JSZip.loadAsync(file);
-            const jsonFile = zip.file("project_data.txt") || zip.file("project_data.json");
-            if (!jsonFile) {
-                alert('⚠️ ZIP 封包內未找到 project_data 設定檔。');
-                return;
-            }
-
-            let jsonText = await jsonFile.async("string");
-            if (jsonText.charCodeAt(0) === 0xFEFF) {
-                jsonText = jsonText.slice(1);
-            }
-            const importedState = JSON.parse(jsonText);
-
-            if (importedState.rooms) {
-                for (const room of importedState.rooms) {
-                    if (room.geometry && Array.isArray(room.geometry.cadFiles)) {
-                        for (const cadFile of room.geometry.cadFiles) {
-                            if (cadFile.zipPath) {
-                                const zippedFile = zip.file(cadFile.zipPath);
-                                if (zippedFile) {
-                                    const base64 = await zippedFile.async("base64");
-                                    cadFile.fileData = `data:application/octet-stream;base64,${base64}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            state = importedState;
-            sanitizeState();
-            renderAll();
-            alert('🎉 ZIP 專案封包讀取成功！已還原設定檔與所有原檔圖檔。');
-        } catch(err) {
-            console.error('ZIP Import Error:', err);
-            alert('⚠️ ZIP 專案封包解析失敗，請確認檔案是否完整。');
-        } finally {
-            event.target.value = '';
+        } catch (e) {
+            console.warn('目前的 HVAC JSON 與 Diagram Builder 格式不相容，改以空白畫布開始：', e);
         }
-    } else {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                let rawText = e.target.result;
-                if (rawText.charCodeAt(0) === 0xFEFF) {
-                    rawText = rawText.slice(1);
-                }
-                const imported = JSON.parse(rawText);
-                if (imported && (imported.siteInfo || imported.rooms)) {
-                    state = imported;
-                    sanitizeState();
-                    renderAll();
-                    alert('🎉 JSON 專案檔讀取成功！');
-                } else {
-                    alert('⚠️ 專案檔格式不符合 ACES Data Schema。');
-                }
-            } catch(err) {
-                console.error('Import Error:', err);
-                alert('⚠️ 讀取失敗，請確認檔案是否為有效的檔案。');
-            } finally {
-                event.target.value = '';
-            }
-        };
-        reader.readAsText(file);
+    }
+
+    if (typeof iframe.contentWindow.resetCanvas === 'function') {
+        try { iframe.contentWindow.resetCanvas(); } catch(e) { console.warn('無法重設 Diagram Builder 畫布:', e); }
     }
 }
 
-function exportMasterJSON() {
-    if (!validateAllIds()) return;
-    const jsonStr = JSON.stringify(state, null, 2);
-    downloadFile(`ACES_AI_MasterSchema_${state.siteInfo.siteId || 'Project'}.json`, jsonStr, 'application/json');
+function importProjectFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let rawText = e.target.result;
+            if (rawText.charCodeAt(0) === 0xFEFF) {
+                rawText = rawText.slice(1);
+            }
+            const imported = JSON.parse(rawText);
+            if (imported && (imported.siteInfo || imported.rooms)) {
+                state = imported;
+                sanitizeState();
+                renderAll();
+                syncHvacCanvasWithState();
+                alert('🎉 專案檔讀取成功！');
+            } else {
+                alert('⚠️ 專案檔格式不符合 ACES Data Schema。');
+            }
+        } catch(err) {
+            console.error('Import Error:', err);
+            alert('⚠️ 讀取失敗，請確認檔案是否為有效的 JSON 專案檔。');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
 }
 
 function downloadFile(filename, text, type) {
@@ -3885,7 +3998,7 @@ function loadLocalStorageDraft() {
         hvacKeys.forEach(key => {
             const btn = document.createElement('button');
             btn.className = 'component-btn';
-            btn.innerHTML = `<span>${i18n[currentLang].components[key]}</span> <img src="${componentImages[key]}" alt="${key}">`;
+            btn.innerHTML = `<span>${i18n[currentLang].components[key]}</span> <img src="${componentImages[key]}" alt="${key}" draggable="false">`;
             btn.onclick = () => addNode(key);
             list.appendChild(btn);
         });
@@ -3900,7 +4013,7 @@ function loadLocalStorageDraft() {
         wsKeys.forEach(key => {
             const btn = document.createElement('button');
             btn.className = 'component-btn';
-            btn.innerHTML = `<span>${i18n[currentLang].components[key]}</span> <img src="${componentImages[key]}" alt="${key}">`;
+            btn.innerHTML = `<span>${i18n[currentLang].components[key]}</span> <img src="${componentImages[key]}" alt="${key}" draggable="false">`;
             btn.onclick = () => addNode(key);
             list.appendChild(btn);
         });
@@ -3971,7 +4084,7 @@ function loadLocalStorageDraft() {
             nodeEl.innerHTML = `
                 <div class="delete-node-btn" onclick="deleteNode(event, '${nodeObj.id}')" title="Delete">✖</div>
                 <div class="img-wrapper">
-                    <img src="${componentImages[type]}" alt="${type}">
+                    <img src="${componentImages[type]}" alt="${type}" draggable="false">
                 </div>
                 <div class="node-info">
                     <div class="node-title" data-key="${type}">${i18n[currentLang].components[type]}</div>
@@ -4611,21 +4724,30 @@ function loadLocalStorageDraft() {
     }
 
     // 綁定畫布的拖放事件；使用計數器避免子元素觸發 dragenter/dragleave 造成覆蓋層閃爍
+    // 僅在真的是「外部檔案」被拖進來時才反應（dataTransfer.types 內含 'Files'），
+    // 避免在畫布上拖拉元件時，因瀏覽器對 <img> 的原生拖曳誤判而跳出提示。
+    function isExternalFileDrag(e) {
+        return !!(e.dataTransfer && e.dataTransfer.types && Array.prototype.includes.call(e.dataTransfer.types, 'Files'));
+    }
+
     function setupDropZone() {
         const workspace = document.getElementById('workspace');
         let dragCounter = 0;
 
         workspace.addEventListener('dragenter', (e) => {
+            if (!isExternalFileDrag(e)) return;
             e.preventDefault();
             dragCounter++;
             workspace.classList.add('drag-over');
         });
 
         workspace.addEventListener('dragover', (e) => {
+            if (!isExternalFileDrag(e)) return;
             e.preventDefault(); // 必須阻止預設行為，否則瀏覽器會直接開啟檔案而非觸發 drop
         });
 
         workspace.addEventListener('dragleave', (e) => {
+            if (!isExternalFileDrag(e)) return;
             e.preventDefault();
             dragCounter--;
             if (dragCounter <= 0) {
@@ -4635,6 +4757,7 @@ function loadLocalStorageDraft() {
         });
 
         workspace.addEventListener('drop', (e) => {
+            if (!isExternalFileDrag(e)) return;
             e.preventDefault();
             dragCounter = 0;
             workspace.classList.remove('drag-over');
