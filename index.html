@@ -417,9 +417,9 @@
         }
         /* 各凍結欄的固定寬度與左側位移 (需與寬度累加值一致) */
         #ioTableContent .io-sticky-1 { left: 0;     width: 220px; min-width: 220px; max-width: 220px; }
-        #ioTableContent .io-sticky-2 { left: 220px; width: 150px; min-width: 150px; max-width: 150px; }
-        #ioTableContent .io-sticky-3 { left: 370px; width: 320px; min-width: 320px; max-width: 320px; }
-        #ioTableContent .io-sticky-4 { left: 690px; width: 70px;  min-width: 70px;  max-width: 70px; }
+        #ioTableContent .io-sticky-2 { left: 220px; width: 190px; min-width: 190px; max-width: 190px; }
+        #ioTableContent .io-sticky-3 { left: 410px; width: 320px; min-width: 320px; max-width: 320px; }
+        #ioTableContent .io-sticky-4 { left: 730px; width: 110px; min-width: 110px; max-width: 110px; }
         /* 凍結區與可捲動區的分界線 */
         #ioTableContent .io-sticky-4 {
             border-right: 2px solid var(--border-color) !important;
@@ -430,11 +430,13 @@
         #ioTableContent table.data-table thead th.io-sticky-4 {
             box-shadow: inset 0 1px 0 var(--border-color), inset 0 -1px 0 var(--border-color), 3px 0 5px -2px rgba(9, 30, 66, 0.18);
         }
-        /* 凍結欄內文字改為自動換行，避免超出固定欄寬 */
-        #ioTableContent td.io-sticky-col,
-        #ioTableContent th.io-sticky-col {
+        /* 凍結欄內文字改為自動換行，避免超出固定欄寬 (僅限內容列，表頭維持單行) */
+        #ioTableContent td.io-sticky-col {
             white-space: normal !important;
             word-break: break-word;
+        }
+        #ioTableContent th.io-sticky-col {
+            white-space: nowrap !important;
         }
         #ioTableContent td.io-sticky-col input.form-control {
             width: 100%;
@@ -1397,8 +1399,8 @@ function sanitizeState() {
         if (r.zones) {
             r.zones.forEach(z => {
                 if (z.isCustomId === undefined) z.isCustomId = false;
-                // 熱通道數量：僅「熱通道封閉」需要，其餘型式一律歸零 (不需填寫)
-                if (z.containmentType === 'Hot Aisle Containment') {
+                // 熱通道數量：「熱通道封閉」與「冷通道封閉」皆需要 (通道仍存在，只是封閉方式不同)，僅「無封閉」歸零 (不需填寫)
+                if (z.containmentType !== 'Open') {
                     let n = parseInt(z.hotAisleCount, 10);
                     if (!Number.isFinite(n) || n < 1) n = 1;
                     z.hotAisleCount = n;
@@ -1703,7 +1705,7 @@ function renderGeometry() {
                                     </select>
                                 </td>
                                 <td>
-                                    ${z.containmentType === 'Hot Aisle Containment' ? `
+                                    ${z.containmentType !== 'Open' ? `
                                         <input type="number" class="form-control" min="1" step="1" style="width:100%; min-width:0;"
                                             value="${z.hotAisleCount || 1}"
                                             onchange="updateZone(${state.activeRoomTab}, ${zIdx}, 'hotAisleCount', this.value)"
@@ -1712,7 +1714,7 @@ function renderGeometry() {
                                             ${getHotAisleNames(room.roomId, z.zoneId).join(', ')}
                                         </div>
                                     ` : `
-                                        <input type="text" class="form-control" value="-" disabled style="width:100%; min-width:0; background:#f4f5f7; text-align:center;" title="僅「熱通道封閉」需填寫熱通道數量">
+                                        <input type="text" class="form-control" value="-" disabled style="width:100%; min-width:0; background:#f4f5f7; text-align:center;" title="「無封閉」不需填寫熱通道數量">
                                     `}
                                 </td>
                             </tr>
@@ -1901,13 +1903,13 @@ function updateZone(roomIdx, zoneIdx, field, val) {
     } else if (field === 'containmentType') {
         const zone = state.rooms[roomIdx].zones[zoneIdx];
         zone.containmentType = val;
-        if (val === 'Hot Aisle Containment') {
-            // 切換為熱通道封閉 → 至少 1 條熱通道
+        if (val !== 'Open') {
+            // 切換為熱通道封閉 / 冷通道封閉 → 通道仍存在，至少需要 1 條熱通道
             let n = parseInt(zone.hotAisleCount, 10);
             if (!Number.isFinite(n) || n < 1) n = 1;
             zone.hotAisleCount = n;
         } else {
-            // 冷通道封閉 / 無封閉 → 不需填寫熱通道數量
+            // 無封閉 → 不需填寫熱通道數量
             zone.hotAisleCount = 0;
         }
     } else {
@@ -2232,7 +2234,7 @@ function generateDefaultEquipmentId(eqType, isGrey, currentIdx = null) {
     return candidate;
 }
 
-// 篩選器目前的選取狀態 (空字串代表「全部 / All」)
+// 器目前的選取狀態 (空字串代表「全部 / All」)
 function getCoolingFilters() {
     if (!state.coolingFilters) {
         state.coolingFilters = { category: '', roomId: '', zoneId: '', equipmentType: '' };
@@ -2263,30 +2265,30 @@ function renderCoolingFilterToolbar() {
 
     bar.innerHTML = `
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Category / 篩選類型</label>
+            <label style="font-size:0.75rem;">Category / 類型</label>
             <select class="form-control" onchange="updateCoolingFilter('category', this.value)">
                 ${buildOptions(['White Space / 白區', 'Grey Space / 灰區'], filters.category)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Room ID / 篩選機房編號</label>
+            <label style="font-size:0.75rem;">Room ID / 機房編號</label>
             <select class="form-control" onchange="updateCoolingFilter('roomId', this.value)">
                 ${buildOptions(roomOptions, filters.roomId)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Zone ID / 篩選區域編號</label>
+            <label style="font-size:0.75rem;">Zone ID / 區域編號</label>
             <select class="form-control" onchange="updateCoolingFilter('zoneId', this.value)">
                 ${buildOptions(zoneOptions, filters.zoneId)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:220px;">
-            <label style="font-size:0.75rem;">Filter: Equipment Type / 篩選設備類型</label>
+            <label style="font-size:0.75rem;">Equipment Type / 設備類型</label>
             <select class="form-control" onchange="updateCoolingFilter('equipmentType', this.value)">
                 ${buildOptions(typeOptions, filters.equipmentType)}
             </select>
         </div>
-        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetCoolingFilters()">✕ Clear Filters / 清除篩選</button>
+        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetCoolingFilters()">✕ Clear Filters / 清除</button>
     `;
 }
 
@@ -2329,8 +2331,8 @@ function renderCoolingUnits() {
             }
         }
 
-        // 鄰近熱通道：僅當該 Zone 為「熱通道封閉」時才需要 (且選項來自 Zone 的熱通道數量)
-        const hotAisleNames = isGrey ? [] : getHotAisleNames(u.roomId, u.zoneId);
+        // 鄰近熱通道：僅當該 Zone 為「熱通道封閉」時才需要 (冷通道封閉 / 無封閉皆不需要)，且選項來自 Zone 的熱通道數量
+        const hotAisleNames = isGrey ? [] : getCoolingHotAisleNames(u.roomId, u.zoneId);
         const aisleLocked = isGrey || hotAisleNames.length === 0;
         if (aisleLocked) {
             u.adjacentHotAisle = '-';
@@ -2342,7 +2344,7 @@ function renderCoolingUnits() {
             u.equipmentId = generateDefaultEquipmentId(u.equipmentType, isGrey, idx);
         }
 
-        // 依篩選條件決定此列是否顯示；idx 仍對應 state.coolingUnits 的真實索引，
+        // 依條件決定此列是否顯示；idx 仍對應 state.coolingUnits 的真實索引，
         // 因此隱藏的列不影響 update/delete/move 等函式的索引對應。
         const rowCategory = isGrey ? 'Grey Space / 灰區' : 'White Space / 白區';
         if (filters.category && rowCategory !== filters.category) return;
@@ -2393,7 +2395,7 @@ function renderCoolingUnits() {
 
     if (state.coolingUnits.length > 0 && visibleCount === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前篩選條件下無符合的設備資料 / No equipment matches the current filters</td>`;
+        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的設備資料 / No equipment matches the current filters</td>`;
         tbody.appendChild(tr);
     }
 
@@ -2426,16 +2428,17 @@ function findZoneObject(roomId, zoneId) {
     return room.zones.find(z => z.zoneId === zoneId) || null;
 }
 
-// 該 Zone 是否為「熱通道封閉」(只有這種情況才需要指定鄰近熱通道)
+// 該 Zone 是否為「熱通道封閉」(僅此類型的 Zone，鄰近空調設備才需要指定鄰近熱通道)
 function isHotAisleContainedZone(roomId, zoneId) {
     const z = findZoneObject(roomId, zoneId);
     return !!(z && z.containmentType === 'Hot Aisle Containment');
 }
 
 // 依 Layout & Geometry 填寫的熱通道數量，自動產生熱通道名稱：A-HA1, A-HA2, ...
+// 「熱通道封閉」與「冷通道封閉」的 Zone 都存在熱通道 (只是封閉方式不同)，故皆會產生熱通道名稱；僅「無封閉」不產生。
 function getHotAisleNames(roomId, zoneId) {
     const z = findZoneObject(roomId, zoneId);
-    if (!z || z.containmentType !== 'Hot Aisle Containment') return [];
+    if (!z || z.containmentType === 'Open') return [];
     let n = parseInt(z.hotAisleCount, 10);
     if (!Number.isFinite(n) || n < 1) n = 1;
     const names = [];
@@ -2443,13 +2446,19 @@ function getHotAisleNames(roomId, zoneId) {
     return names;
 }
 
+// 專供 Cooling Equipment 的「鄰近熱通道」欄位使用：僅「熱通道封閉」的 Zone 才回傳熱通道名稱，
+// 「冷通道封閉」與「無封閉」的 Zone 皆不需要指定鄰近熱通道 (與 Zone Details / Sensor List 的邏輯分開)。
+function getCoolingHotAisleNames(roomId, zoneId) {
+    return isHotAisleContainedZone(roomId, zoneId) ? getHotAisleNames(roomId, zoneId) : [];
+}
+
 // 彙整所有 Room / Zone 底下已定義的熱通道編號 (例如 A-HA1, A-HA2...)，供 Sensors List 的
-// 「熱通道編號 / Hot Aisle ID」欄位下拉選單使用 (該欄位只有 Sensor 依附 Hot Aisle 時才需要填寫)
+// 「熱通道編號 / Hot Aisle ID」欄位下拉選單使用 (該欄位僅 Sensor 依附 Hot Aisle 時才需要填寫)
 function getAllHotAisleIds() {
     const names = [];
     (state.rooms || []).forEach(room => {
         (room.zones || []).forEach(z => {
-            if (z.containmentType === 'Hot Aisle Containment') {
+            if (z.containmentType !== 'Open') {
                 getHotAisleNames(room.roomId, z.zoneId).forEach(n => {
                     if (!names.includes(n)) names.push(n);
                 });
@@ -2468,7 +2477,7 @@ function syncCoolingAdjacentHotAisles() {
             u.adjacentHotAisle = '-';
             return;
         }
-        const names = getHotAisleNames(u.roomId, u.zoneId);
+        const names = getCoolingHotAisleNames(u.roomId, u.zoneId);
         if (names.length === 0) {
             u.adjacentHotAisle = '-';           // 非熱通道封閉 → 不需填寫
         } else if (!names.includes(u.adjacentHotAisle)) {
@@ -2492,7 +2501,7 @@ function updateCoolingSpace(idx, spaceVal) {
         state.coolingUnits[idx].roomId = state.rooms[0] ? state.rooms[0].roomId : "R1";
         const firstZone = getZonesForRoomId(state.coolingUnits[idx].roomId)[0];
         state.coolingUnits[idx].zoneId = firstZone ? firstZone.zoneId : "A";
-        state.coolingUnits[idx].adjacentHotAisle = getHotAisleNames(state.coolingUnits[idx].roomId, state.coolingUnits[idx].zoneId)[0] || "-";
+        state.coolingUnits[idx].adjacentHotAisle = getCoolingHotAisleNames(state.coolingUnits[idx].roomId, state.coolingUnits[idx].zoneId)[0] || "-";
         state.coolingUnits[idx].equipmentId = generateDefaultEquipmentId(WHITE_SPACE_EQUIPMENT[0], false, idx);
     }
     
@@ -2519,7 +2528,7 @@ function updateCoolingRoom(idx, roomIdVal) {
     const zones = getZonesForRoomId(roomIdVal);
     if (zones.length > 0) {
         state.coolingUnits[idx].zoneId = zones[0].zoneId;
-        state.coolingUnits[idx].adjacentHotAisle = getHotAisleNames(roomIdVal, zones[0].zoneId)[0] || "-";
+        state.coolingUnits[idx].adjacentHotAisle = getCoolingHotAisleNames(roomIdVal, zones[0].zoneId)[0] || "-";
     }
     renderCoolingUnits();
     renderIoTable();
@@ -2535,7 +2544,7 @@ function updateCoolingZoneId(idx, zoneIdVal) {
 
     unit.zoneId = zoneIdVal;
     // 切換 Zone 後，鄰近熱通道選項會改變：僅熱通道封閉的 Zone 需要填寫，預設取第一條熱通道
-    unit.adjacentHotAisle = getHotAisleNames(unit.roomId, zoneIdVal)[0] || '-';
+    unit.adjacentHotAisle = getCoolingHotAisleNames(unit.roomId, zoneIdVal)[0] || '-';
 
     renderCoolingUnits();
     renderIoTable();
@@ -2546,7 +2555,7 @@ function updateCoolingZoneId(idx, zoneIdVal) {
 // Adjacent Hot Aisle / 鄰近熱通道 (僅該 Zone 為熱通道封閉時可編輯)
 function updateCoolingZone(idx, aisleName) {
     const unit = state.coolingUnits[idx];
-    const validNames = getHotAisleNames(unit.roomId, unit.zoneId);
+    const validNames = getCoolingHotAisleNames(unit.roomId, unit.zoneId);
     unit.adjacentHotAisle = validNames.includes(aisleName) ? aisleName : (validNames[0] || '-');
     renderCoolingUnits();
     renderIoTable();
@@ -2586,7 +2595,7 @@ function addCoolingUnit() {
         zoneId: firstZoneId,
         equipmentType: defaultType,
         equipmentId: defaultId,
-        adjacentHotAisle: getHotAisleNames(firstRoomId, firstZoneId)[0] || "-",
+        adjacentHotAisle: getCoolingHotAisleNames(firstRoomId, firstZoneId)[0] || "-",
         model: "",
         specs: {}
     });
@@ -2809,7 +2818,7 @@ function updateCoolingSpec(eqId, key, val) {
 }
 
 // --- 5. RACK SURVEY ---
-// 篩選器目前的選取狀態 (空字串代表「全部 / All」)
+// 器目前的選取狀態 (空字串代表「全部 / All」)
 function getRackFilters() {
     if (!state.rackFilters) {
         state.rackFilters = { roomId: '', zoneId: '', highDensity: '' };
@@ -2839,26 +2848,26 @@ function renderRackFilterToolbar() {
 
     bar.innerHTML = `
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Room ID / 篩選機房編號</label>
+            <label style="font-size:0.75rem;">Room ID / 機房編號</label>
             <select class="form-control" onchange="updateRackFilter('roomId', this.value)">
                 ${buildOptions(roomOptions, filters.roomId)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Zone ID / 篩選區域編號</label>
+            <label style="font-size:0.75rem;">Zone ID / 區域編號</label>
             <select class="form-control" onchange="updateRackFilter('zoneId', this.value)">
                 ${buildOptions(zoneOptions, filters.zoneId)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: High Density / 篩選高密度</label>
+            <label style="font-size:0.75rem;">High Density / 高密度</label>
             <select class="form-control" onchange="updateRackFilter('highDensity', this.value)">
                 <option value="">All / 全部</option>
                 <option value="yes" ${filters.highDensity === 'yes' ? 'selected' : ''}>Yes / 是 (&gt;=20kW)</option>
                 <option value="no" ${filters.highDensity === 'no' ? 'selected' : ''}>No / 否</option>
             </select>
         </div>
-        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetRackFilters()">✕ Clear Filters / 清除篩選</button>
+        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetRackFilters()">✕ Clear Filters / 清除</button>
     `;
 }
 
@@ -2875,7 +2884,7 @@ function renderRackSurvey() {
         const computedRackId = `${r.zoneId}-R${r.rackNo}`;
         const isHighDensity = r.powerCapacityKw >= 20;
 
-        // 依篩選條件決定此列是否顯示；idx 仍對應 state.racks 的真實索引，
+        // 依條件決定此列是否顯示；idx 仍對應 state.racks 的真實索引，
         // 因此隱藏的列不影響 update/delete/duplicate 等函式的索引對應。
         if (filters.roomId && r.roomId !== filters.roomId) return;
         if (filters.zoneId && r.zoneId !== filters.zoneId) return;
@@ -2910,7 +2919,7 @@ function renderRackSurvey() {
 
     if (state.racks.length > 0 && visibleCount === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前篩選條件下無符合的機櫃資料 / No racks match the current filters</td>`;
+        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的機櫃資料 / No racks match the current filters</td>`;
         tbody.appendChild(tr);
     }
 }
@@ -3068,7 +3077,7 @@ function updateSensorType(idx, sType) {
     saveLocalStorageDraft();
 }
 
-// 篩選器目前的選取狀態 (空字串代表「全部 / All」)
+// 器目前的選取狀態 (空字串代表「全部 / All」)
 function getSensorFilters() {
     if (!state.sensorFilters) {
         state.sensorFilters = { sensorType: '', attachment: '', rackId: '', hotAisleId: '' };
@@ -3098,30 +3107,30 @@ function renderSensorFilterToolbar() {
 
     bar.innerHTML = `
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Sensor Type / 篩選類型</label>
+            <label style="font-size:0.75rem;">Sensor Type / 類型</label>
             <select class="form-control" onchange="updateSensorFilter('sensorType', this.value)">
                 ${buildOptions(['Temperature Sensor', 'Humidity Sensor'], filters.sensorType)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Attachment / 篩選依附物</label>
+            <label style="font-size:0.75rem;">Attachment / 依附物</label>
             <select class="form-control" onchange="updateSensorFilter('attachment', this.value)">
                 ${buildOptions(['Rack', 'Cold Aisle', 'Hot Aisle'], filters.attachment)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Rack ID / 篩選機櫃編號</label>
+            <label style="font-size:0.75rem;">Rack ID / 機櫃編號</label>
             <select class="form-control" onchange="updateSensorFilter('rackId', this.value)">
                 ${buildOptions(availableRackIds, filters.rackId)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:170px;">
-            <label style="font-size:0.75rem;">Filter: Hot Aisle ID / 篩選熱通道編號</label>
+            <label style="font-size:0.75rem;">Hot Aisle ID / 熱通道編號</label>
             <select class="form-control" onchange="updateSensorFilter('hotAisleId', this.value)">
                 ${buildOptions(availableHotAisleIds, filters.hotAisleId)}
             </select>
         </div>
-        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetSensorFilters()">✕ Clear Filters / 清除篩選</button>
+        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetSensorFilters()">✕ Clear Filters / 清除</button>
     `;
 }
 
@@ -3141,10 +3150,11 @@ function renderSensorsList() {
     state.sensors.forEach((s, idx) => {
         const isRackAttached = s.attachment === 'Rack';
         const isHotAisleAttached = s.attachment === 'Hot Aisle';
+        const isColdAisleAttached = s.attachment === 'Cold Aisle';
 
-        // 依篩選條件決定此列是否顯示；idx 仍對應 state.sensors 的真實索引，
+        // 依條件決定此列是否顯示；idx 仍對應 state.sensors 的真實索引，
         // 因此隱藏的列不影響 update/delete 等函式的索引對應。
-        // Rack ID / Hot Aisle ID 僅在對應依附物時才有意義，不符合依附物時一律視為不符合篩選 (顯示為 "-")。
+        // Rack ID / Hot Aisle ID 僅在對應依附物時才有意義，不符合依附物時一律視為不符合 (顯示為 "-")。
         if (filters.sensorType && s.sensorType !== filters.sensorType) return;
         if (filters.attachment && s.attachment !== filters.attachment) return;
         if (filters.rackId && (!isRackAttached || s.rackId !== filters.rackId)) return;
@@ -3197,7 +3207,7 @@ function renderSensorsList() {
                     <input type="text" class="form-control" style="width:100%; min-width:0; background:#f4f5f7; text-align:center;" value="-" disabled title="僅「Rack」依附物需填寫進風或回風">
                 `}
             </td>
-            <td><input type="text" class="form-control" value="${s.remarks}" onchange="updateSensor(${idx}, 'remarks', this.value)"></td>
+            <td><input type="text" class="form-control" value="${s.remarks}" ${isColdAisleAttached ? 'placeholder="請填入所在區域 (A, B, C...)"' : ''} onchange="updateSensor(${idx}, 'remarks', this.value)"></td>
             <td><button class="btn btn-danger btn-sm" onclick="deleteSensor(${idx})">Delete</button></td>
         `;
         tbody.appendChild(tr);
@@ -3205,7 +3215,7 @@ function renderSensorsList() {
 
     if (state.sensors.length > 0 && visibleCount === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前篩選條件下無符合的感測器資料 / No sensors match the current filters</td>`;
+        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的感測器資料 / No sensors match the current filters</td>`;
         tbody.appendChild(tr);
     }
 }
@@ -3522,7 +3532,7 @@ function getIoRowsForTab(tabId) {
     return rows;
 }
 
-// 篩選器目前的選取狀態 (空字串代表「全部 / All」)；三個子頁籤 (White/Grey/Rack) 共用同一組篩選狀態，
+// 器目前的選取狀態 (空字串代表「全部 / All」)；三個子頁籤 (White/Grey/Rack) 共用同一組狀態，
 // 但下拉選單內容依目前頁籤中出現的資料動態產生。
 function getIoFilters() {
     if (!state.ioFilters) {
@@ -3554,24 +3564,24 @@ function renderIoFilterToolbar(allRows) {
     return `
         <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:12px;">
             <div class="form-group" style="margin:0; min-width:220px;">
-                <label style="font-size:0.75rem;">Filter: Items / 篩選項目</label>
+                <label style="font-size:0.75rem;">Items / 項目</label>
                 <select class="form-control" onchange="updateIoFilter('item', this.value)">
                     ${buildOptions(itemOptions, filters.item)}
                 </select>
             </div>
             <div class="form-group" style="margin:0; min-width:260px;">
-                <label style="font-size:0.75rem;">Filter: Data Point / 篩選資料點位</label>
+                <label style="font-size:0.75rem;">Data Point / 資料點位</label>
                 <select class="form-control" onchange="updateIoFilter('dataPoint', this.value)">
                     ${buildOptions(dataPointOptions, filters.dataPoint)}
                 </select>
             </div>
             <div class="form-group" style="margin:0; min-width:140px;">
-                <label style="font-size:0.75rem;">Filter: Unit / 篩選單位</label>
+                <label style="font-size:0.75rem;">Unit / 單位</label>
                 <select class="form-control" onchange="updateIoFilter('unit', this.value)">
                     ${buildOptions(unitOptions, filters.unit)}
                 </select>
             </div>
-            <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetIoFilters()">✕ Clear Filters / 清除篩選</button>
+            <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetIoFilters()">✕ Clear Filters / 清除</button>
         </div>
     `;
 }
@@ -3621,7 +3631,7 @@ function renderIoTable() {
             </thead>
             <tbody>
                 ${rows.length === 0 ? `
-                    <tr><td colspan="${4 + cols.length + 1}" style="text-align:center; color:var(--text-muted); padding:14px;">${allRows.length === 0 ? '目前尚無資料 / No data yet' : '目前篩選條件下無符合的點位資料 / No data points match the current filters'}</td></tr>
+                    <tr><td colspan="${4 + cols.length + 1}" style="text-align:center; color:var(--text-muted); padding:14px;">${allRows.length === 0 ? '目前尚無資料 / No data yet' : '目前條件下無符合的點位資料 / No data points match the current filters'}</td></tr>
                 ` : rows.map((r, rIdx) => {
                     const metaKey = ioRowKey(r);
                     const meta = state.ioTableMeta[metaKey] || {};
@@ -3836,7 +3846,7 @@ function deleteCustomIoPoint(eqId, ptIdx) {
 }
 
 // --- 8. O&M PARAMETERS ---
-// 篩選器目前的選取狀態 (空字串代表「全部 / All」)
+// 器目前的選取狀態 (空字串代表「全部 / All」)
 function getOmFilters() {
     if (!state.omFilters) {
         state.omFilters = { type: '', item: '' };
@@ -3866,18 +3876,18 @@ function renderOmFilterToolbar(allRows) {
 
     bar.innerHTML = `
         <div class="form-group" style="margin:0; min-width:200px;">
-            <label style="font-size:0.75rem;">Filter: Type / 篩選條件類型</label>
+            <label style="font-size:0.75rem;">Type / 條件類型</label>
             <select class="form-control" onchange="updateOmFilter('type', this.value)">
                 ${buildOptions(typeOptions, filters.type)}
             </select>
         </div>
         <div class="form-group" style="margin:0; min-width:200px;">
-            <label style="font-size:0.75rem;">Filter: Item / 篩選項目</label>
+            <label style="font-size:0.75rem;">Item / 項目</label>
             <select class="form-control" onchange="updateOmFilter('item', this.value)">
                 ${buildOptions(itemOptions, filters.item)}
             </select>
         </div>
-        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetOmFilters()">✕ Clear Filters / 清除篩選</button>
+        <button class="btn btn-outline btn-sm" style="height:38px;" onclick="resetOmFilters()">✕ Clear Filters / 清除</button>
     `;
 }
 
@@ -3971,7 +3981,7 @@ function renderOmParams() {
     });
 
     if (visibleRows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:14px;">目前篩選條件下無符合的參數資料 / No parameters match the current filters</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的參數資料 / No parameters match the current filters</td></tr>`;
         return;
     }
 
