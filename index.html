@@ -715,6 +715,35 @@
             color: var(--text-muted);
             margin-top: auto;
         }
+
+        /* --- Sensor Placement (7. 感測器平面定位) --- */
+        .placement-layout { display: flex; gap: 16px; align-items: flex-start; }
+        .placement-sensor-list { width: 280px; flex-shrink: 0; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; max-height: 620px; overflow-y: auto; }
+        .placement-sensor-item { padding: 8px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 0.82rem; }
+        .placement-sensor-item:hover { background: var(--bg-light); }
+        .placement-sensor-item.selected { background: #e6f0ff; border-left: 3px solid var(--primary); padding-left: 7px; }
+        .placement-status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .placement-status-unplaced { background: var(--danger); }
+        .placement-status-suggested { background: var(--warning); }
+        .placement-status-confirmed { background: var(--success); }
+        .placement-canvas-col { flex: 1; min-width: 0; }
+        .placement-canvas-wrap { position: relative; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-light); min-height: 420px; height: 640px; overflow: hidden; }
+        .placement-canvas-wrap.expanded { height: 82vh; }
+        .placement-canvas-wrap img { display: block; width: 100%; height: auto; user-select: none; cursor: crosshair; }
+        .placement-pin { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.35); transform: translate(-50%, -50%); cursor: pointer; }
+        .placement-pin.confirmed { background: var(--success); }
+        .placement-pin.pending { background: var(--warning); }
+        .placement-confirm-box { position: absolute; background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); padding: 10px 12px; width: 220px; z-index: 20; }
+        .placement-empty-hint { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        .placement-zoom-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+        .placement-canvas-wrap svg { cursor: grab; touch-action: none; }
+        .placement-canvas-wrap svg:active { cursor: grabbing; }
+        @media (max-width: 860px) {
+            .placement-layout { flex-direction: column; }
+            .placement-layout > * { width: 100%; }
+            .placement-sensor-list { max-height: 220px; }
+            .placement-canvas-wrap { min-height: 320px; height: 60vh; }
+        }
     </style>
 </head>
 <body>
@@ -742,9 +771,10 @@
     <button class="tab-btn" onclick="switchTab('cooling', this)">4. Cooling Units</button>
     <button class="tab-btn" onclick="switchTab('rack', this)">5. Rack Survey</button>
     <button class="tab-btn" onclick="switchTab('sensors', this)">6. Sensors List</button>
-    <button class="tab-btn" onclick="switchTab('io-table', this)">7. I/O Table</button>
-    <button class="tab-btn" onclick="switchTab('om-params', this)">8. O&M Parameters</button>
-    <button class="tab-btn" onclick="switchTab('notes', this)">9. Note</button>
+    <button class="tab-btn" onclick="switchTab('sensor-placement', this)">7. Sensor Placement</button>
+    <button class="tab-btn" onclick="switchTab('io-table', this)">8. I/O Table</button>
+    <button class="tab-btn" onclick="switchTab('om-params', this)">9. O&M Parameters</button>
+    <button class="tab-btn" onclick="switchTab('notes', this)">10. Note</button>
 </div>
 </div>
 
@@ -956,6 +986,7 @@
                             <th style="width:170px;">Hot Aisle ID / 熱通道編號</th>
                             <th>Inlet or Outlet / 進風或回風</th>
                             <th>Remarks / 備註</th>
+                            <th style="width:120px;">Placement / 定位狀態</th>
                             <th>Setting / 設定</th>
                         </tr>
                     </thead>
@@ -967,7 +998,23 @@
         </div>
     </div>
 
-    <!-- 7. I/O TABLE -->
+    <!-- 7. SENSOR PLACEMENT -->
+    <div id="sensor-placement" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Sensor Placement / 感測器平面定位</span>
+                <span id="placementProgress" style="font-size:0.82rem; color:var(--text-muted);"></span>
+            </div>
+            <div class="sub-tab-nav" id="placementRoomTabNav">
+                <!-- Dynamic room tabs -->
+            </div>
+            <div id="placementBody" style="padding:16px 20px;">
+                <!-- Dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. I/O TABLE -->
     <div id="io-table" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -1111,7 +1158,7 @@ function getEmptyState() {
         ioTableMeta: {},
         ioMetaColumns: getDefaultIoMetaColumns(),
         notes: [],
-        activeRoomTab: 0, activeIoTab: "white-cooling", activeCoolingSpecTab: "white"
+        activeRoomTab: 0, activeIoTab: "white-cooling", activeCoolingSpecTab: "white", activePlacementRoom: 0
     };
 }
 
@@ -1374,6 +1421,16 @@ function sanitizeState() {
         if (s.sensorType === 'Temperature & Humidity Sensor' || s.sensorType === 'Temp/Humidity Sensor') {
             s.sensorType = 'Temperature Sensor';
         }
+        // Sensor Placement (7.) 所需欄位：平面座標 (百分比或 JSON 真實座標)、垂直高度 (cm)、定位狀態
+        if (s.planPosition === undefined) s.planPosition = null;
+        if (s.heightCm === undefined) s.heightCm = null;
+        if (!s.placementStatus) s.placementStatus = (s.planPosition && s.heightCm != null) ? 'confirmed' : 'unplaced';
+        // 座標系標記：舊資料 (改版前就已存在的 planPosition) 一律視為「影像百分比」模式，
+        // 避免新版的 JSON 真實座標渲染邏輯誤把舊資料當成 JSON 座標畫出來，導致位置整個跑掉。
+        if (s.planPosition && !s.planPositionSpace) s.planPositionSpace = 'image-pct';
+        if (s.planPositionSpace === undefined) s.planPositionSpace = null;
+        if (s.matchedEntityId === undefined) s.matchedEntityId = null;
+        if (s.matchedEntityType === undefined) s.matchedEntityType = null;
     });
     if (!state.ioTableMeta || typeof state.ioTableMeta !== 'object') state.ioTableMeta = {};
     if (!Array.isArray(state.ioMetaColumns) || state.ioMetaColumns.length === 0) state.ioMetaColumns = getDefaultIoMetaColumns();
@@ -1396,6 +1453,7 @@ function sanitizeState() {
     });
     
     state.rooms.forEach(r => {
+        if (r.geometry && r.geometry.detectionJson === undefined) r.geometry.detectionJson = null;
         if (r.zones) {
             r.zones.forEach(z => {
                 if (z.isCustomId === undefined) z.isCustomId = false;
@@ -1422,6 +1480,13 @@ function sanitizeState() {
     }
     if (!state.activeIoTab) state.activeIoTab = "white-cooling";
     if (!state.activeCoolingSpecTab) state.activeCoolingSpecTab = "white";
+    if (state.rooms.length > 0) {
+        if (typeof state.activePlacementRoom !== 'number' || state.activePlacementRoom < 0 || state.activePlacementRoom >= state.rooms.length) {
+            state.activePlacementRoom = 0;
+        }
+    } else {
+        state.activePlacementRoom = 0;
+    }
 
     reassignAllDefaultZoneIds();
     syncCoolingAdjacentHotAisles();
@@ -1449,6 +1514,7 @@ function renderAll() {
     renderCoolingUnits();
     renderRackSurvey();
     renderSensorsList();
+    renderSensorPlacement();
     renderIoTable();
     renderOmParams();
     renderNotes();
@@ -1646,8 +1712,8 @@ function renderGeometry() {
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>2D/3D Files Upload / 2D/3D 圖檔上傳 (可上傳多檔)</label>
-                    <input type="file" class="form-control" multiple accept=".dwg,.step,.stp,.pdf,.dxf,.png,.jpg,.jpeg,.zip,.rar" onchange="handleCadFileUpload(${state.activeRoomTab}, event)">
+                    <label>File Upload / 文件上傳</label>
+                    <input type="file" class="form-control" multiple accept=".dwg,.step,.stp,.pdf,.dxf,.png,.jpg,.jpeg,.zip,.rar,.json" onchange="handleCadFileUpload(${state.activeRoomTab}, event)">
                     ${renderCadFileList(room)}
                 </div>
                 <div class="form-group">
@@ -1733,20 +1799,45 @@ function renderCadFileList(room) {
         files = [{ fileName: room.geometry.cadFileName, fileData: room.geometry.cadFileData }];
         room.geometry.cadFiles = files;
     }
-    if (files.length === 0) return '';
+    const detectionRow = room.geometry.detectionJson ? `
+        <div style="font-size:0.82rem; color:var(--text-main); background:#eef6ff; padding:6px 8px; border-radius:4px; border:1px solid var(--primary); overflow:hidden;">
+            <div style="display:flex; align-items:flex-start; gap:6px;">
+                <span style="flex:1 1 auto; min-width:0; word-break:break-all;">🗺️ <strong>${room.geometry.detectionJsonFileName || 'detection_result.json'}</strong></span>
+                <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem; flex:0 0 auto; white-space:nowrap;" onclick="removeDetectionJson(${state.activeRoomTab})">移除</button>
+            </div>
+            <div style="color:var(--primary); margin-top:2px;">（2D Layout 座標資料，已可於 Sensor Placement 分頁使用）</div>
+        </div>
+    ` : '';
+    if (files.length === 0 && !detectionRow) return '';
     return `
         <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+            ${detectionRow}
             ${files.map((f, fIdx) => `
-                <div style="font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; justify-content:space-between; background:#f4f5f7; padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);">
-                    <span>📎 <strong>${f.fileName}</strong>${f.loading ? ' <span style="color:var(--text-muted);">（讀取中…）</span>' : (f.loadError ? ' <span style="color:var(--danger);">（讀取失敗）</span>' : '')}</span>
-                    <span style="display:flex; gap:4px; flex-shrink:0;">
-                        ${(!f.loading && !f.loadError) ? `<button class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="downloadSingleCadFile(${state.activeRoomTab}, ${fIdx})" title="直接下載這份原始檔（不經過 ZIP，不會被 Windows 封鎖）">下載</button>` : ''}
-                        <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
-                    </span>
+                <div style="font-size:0.82rem; color:var(--text-main); background:#f4f5f7; padding:6px 8px; border-radius:4px; border:1px solid var(--border-color); overflow:hidden;">
+                    <div style="display:flex; align-items:flex-start; gap:6px;">
+                        <span style="flex:1 1 auto; min-width:0; word-break:break-all;">📎 <strong>${f.fileName}</strong></span>
+                        <span style="display:flex; gap:4px; flex:0 0 auto; white-space:nowrap;">
+                            ${(!f.loading && !f.loadError) ? `<button class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="downloadSingleCadFile(${state.activeRoomTab}, ${fIdx})" title="直接下載這份原始檔（不經過 ZIP，不會被 Windows 封鎖）">下載</button>` : ''}
+                            <button class="btn btn-danger btn-sm" style="padding:1px 6px; font-size:0.75rem;" onclick="removeCadFile(${state.activeRoomTab}, ${fIdx})">移除</button>
+                        </span>
+                    </div>
+                    ${f.loading ? '<div style="color:var(--text-muted); margin-top:2px;">（讀取中…）</div>' : (f.loadError ? '<div style="color:var(--danger); margin-top:2px;">（讀取失敗）</div>' : '')}
                 </div>
             `).join('')}
         </div>
     `;
+}
+
+function removeDetectionJson(roomIdx) {
+    const room = state.rooms[roomIdx];
+    if (!room || !room.geometry) return;
+    if (!confirm('確定要移除已匯入的 2D Layout JSON 嗎？Sensor Placement 分頁將改回顯示影像底圖（若有上傳）。')) return;
+    room.geometry.detectionJson = null;
+    room.geometry.detectionJsonFileName = '';
+    delete placementViewBoxByRoom[roomIdx];
+    renderGeometry();
+    renderSensorPlacement();
+    saveLocalStorageDraft();
 }
 
 function handleCadFileUpload(roomIdx, event) {
@@ -1768,11 +1859,44 @@ function handleCadFileUpload(roomIdx, event) {
      */
     const filesArray = Array.from(fileList);
 
+    // .json 檔案 (實習生辨識演算法輸出的 2D Layout 座標資料) 走獨立的文字解析路徑，
+    // 不放進 cadFiles (那是給影像/CAD 檔案用的 base64 清單)，而是存進 room.geometry.detectionJson，
+    // 供 Sensor Placement 分頁直接畫成可點擊的向量平面圖使用。
+    const jsonFiles = filesArray.filter(f => f.name.toLowerCase().endsWith('.json'));
+    const otherFiles = filesArray.filter(f => !f.name.toLowerCase().endsWith('.json'));
+
+    jsonFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let parsed;
+            try {
+                parsed = JSON.parse(e.target.result);
+            } catch (err) {
+                alert(`⚠️ 「${file.name}」不是有效的 JSON 檔案，無法解析：${err.message}`);
+                return;
+            }
+            if (!parsed || typeof parsed !== 'object' || (!parsed.floors && !parsed.equipment)) {
+                alert(`⚠️ 「${file.name}」的格式看起來不像是辨識演算法輸出的 2D Layout JSON (缺少 floors / equipment 欄位)，仍會嘗試載入，但畫面可能無法正確顯示。`);
+            }
+            room.geometry.detectionJson = parsed;
+            room.geometry.detectionJsonFileName = file.name;
+            delete placementViewBoxByRoom[roomIdx];
+            syncDetectionJsonToSurvey(roomIdx, parsed, file.name);
+            renderGeometry();
+            renderSensorPlacement();
+            saveLocalStorageDraft();
+        };
+        reader.onerror = function() {
+            alert(`⚠️ 讀取「${file.name}」時發生錯誤。`);
+        };
+        reader.readAsText(file);
+    });
+
     /*
      * 先把檔名立即寫入 state 並重新繪製 UI，再非同步讀取檔案內容。
      * 如此一來，使用者上傳後會立刻看到「已上傳」清單，不必切換頁籤才更新畫面。
      */
-    const pendingEntries = filesArray.map(file => ({
+    const pendingEntries = otherFiles.map(file => ({
         fileName: file.name,
         fileData: '',
         loading: true
@@ -1786,7 +1910,7 @@ function handleCadFileUpload(roomIdx, event) {
     event.target.value = '';
 
     pendingEntries.forEach((entry, localIdx) => {
-        const file = filesArray[localIdx];
+        const file = otherFiles[localIdx];
         const reader = new FileReader();
         reader.onload = function(e) {
             entry.fileData = e.target.result;
@@ -1803,6 +1927,126 @@ function handleCadFileUpload(roomIdx, event) {
         };
         reader.readAsDataURL(file);
     });
+}
+
+// 從辨識結果的物件 ID (如 "C-R1"、"D-RC5"、"C-HA1") 取出 Zone 前綴 ("C"、"D")。
+// 規則：取第一個 "-" 之前的字串；若沒有 "-" (代表是舊版扁平 ID，如 "R1")，回傳 null 表示無法判斷 Zone。
+function detectionZonePrefix(id) {
+    if (!id || typeof id !== 'string') return null;
+    const idx = id.indexOf('-');
+    if (idx <= 0) return null;
+    return id.substring(0, idx).toUpperCase();
+}
+
+// 讀取實習生辨識演算法輸出的 2D Layout JSON 後，自動將 Zone ID 前綴 (A/B/C/D...) 對應的
+// Zone 明細、Rack Survey 機櫃列表、White Space 冷卻設備列表，回填到該機房對應的三張表格，
+// 使用者不必再手動一筆一筆新增。
+//
+// 合併策略 (依需求確認)：本次匯入以 JSON 為準，整批覆蓋重建「這個機房」的 Zone / Rack /
+// 白區 Cooling 資料 (其他機房、灰區設備、Sensor 清單完全不受影響)；因此重新匯入修訂版 JSON
+// 時，可以直接反映最新的機櫃/冷卻設備數量與位置，不會有新舊資料混雜或重複的問題。
+// 副作用：機櫃容量/機櫃高度/冷卻設備型號等 JSON 本身沒有的欄位，會重設回預設值，需要人工再次確認。
+//
+// 無法判斷 Zone 前綴的物件 (unresolved.other / unresolved.uncertain，例如語意判斷為 PDC 的 O1~O8)
+// 類型不確定、也沒有 Zone 歸屬，刻意不自動塞進 Rack / Cooling 表 (避免塞錯分類)，
+// 僅在匯入摘要中列出提醒人工確認；它們仍會依既有機制顯示在 Sensor Placement 的向量平面圖上。
+function syncDetectionJsonToSurvey(roomIdx, det, fileName) {
+    const room = state.rooms[roomIdx];
+    if (!room || !det || typeof det !== 'object') return;
+
+    const containments = Array.isArray(det.containments) ? det.containments : [];
+    const racks = (det.equipment && Array.isArray(det.equipment.racks)) ? det.equipment.racks : [];
+    const cooling = (det.equipment && Array.isArray(det.equipment.cooling)) ? det.equipment.cooling : [];
+    const unresolvedOther = (det.unresolved && Array.isArray(det.unresolved.other)) ? det.unresolved.other : [];
+    const unresolvedUncertain = (det.unresolved && Array.isArray(det.unresolved.uncertain)) ? det.unresolved.uncertain : [];
+
+    // 1) 依 containments / racks / cooling 的 ID 前綴，彙整每個 Zone 的封閉型式與熱通道(HA)數量
+    const zoneInfo = {};
+    const ensureZone = prefix => {
+        if (!zoneInfo[prefix]) zoneInfo[prefix] = { hasHot: false, hasCold: false, haCount: 0 };
+        return zoneInfo[prefix];
+    };
+    containments.forEach(c => {
+        const prefix = detectionZonePrefix(c.id);
+        if (!prefix) return;
+        const info = ensureZone(prefix);
+        if (c.type === 'hot') info.hasHot = true;
+        else if (c.type === 'cold') info.hasCold = true;
+        info.haCount++;
+    });
+    racks.forEach(r => { const p = detectionZonePrefix(r.id); if (p) ensureZone(p); });
+    cooling.forEach(c => { const p = detectionZonePrefix(c.id); if (p) ensureZone(p); });
+
+    const zonePrefixes = Object.keys(zoneInfo).sort();
+    if (zonePrefixes.length === 0) {
+        alert(`⚠️ 「${fileName}」內找不到任何具備 Zone 前綴 (如 "C-R1") 的機櫃/冷卻設備/通道資料，無法自動回填 Zone / Rack Survey / Cooling Units，僅會用於平面圖顯示。`);
+        return;
+    }
+
+    // 2) 以 JSON 為準，重建此機房的 Zone 清單
+    room.zones = zonePrefixes.map(prefix => {
+        const info = zoneInfo[prefix];
+        let containmentType = 'Open';
+        if (info.hasHot) containmentType = 'Hot Aisle Containment';
+        else if (info.hasCold) containmentType = 'Cold Aisle Containment';
+        return {
+            zoneId: prefix,
+            isCustomId: true,
+            zoneType: '一般伺服器區',
+            containmentType,
+            hotAisleCount: containmentType === 'Open' ? 0 : Math.max(info.haCount, 1)
+        };
+    });
+
+    // 3) 以 JSON 為準，重建此機房的 Rack Survey 機櫃列表
+    const zoneRackSeq = {};
+    const newRacks = [];
+    racks.forEach(r => {
+        const prefix = detectionZonePrefix(r.id);
+        if (!prefix) return;
+        const rest = r.id.substring(prefix.length + 1);
+        const m = rest.match(/^R(\d+)$/i);
+        let rackNo;
+        if (m) {
+            rackNo = parseInt(m[1], 10);
+        } else {
+            zoneRackSeq[prefix] = (zoneRackSeq[prefix] || 0) + 1;
+            rackNo = zoneRackSeq[prefix];
+        }
+        newRacks.push({ roomId: room.roomId, zoneId: prefix, rackNo, powerCapacityKw: 20, rackHeightCm: 200 });
+    });
+    state.racks = state.racks.filter(r => r.roomId !== room.roomId).concat(newRacks);
+
+    // 4) 以 JSON 為準，重建此機房的白區 (White Space) 冷卻設備列表；灰區設備與其他機房不受影響
+    const newCoolingForRoom = cooling.map(c => {
+        const prefix = detectionZonePrefix(c.id);
+        return {
+            space: 'White Space / 白區',
+            roomId: room.roomId,
+            zoneId: prefix || (zonePrefixes[0] || 'A'),
+            equipmentType: 'Row Cool (CW) / 列間式空調 (冰水型)',
+            equipmentId: c.id,
+            adjacentHotAisle: getCoolingHotAisleNames(room.roomId, prefix)[0] || '-',
+            model: '',
+            specs: {}
+        };
+    });
+    state.coolingUnits = state.coolingUnits.filter(u => !(u.roomId === room.roomId && u.space === 'White Space / 白區')).concat(newCoolingForRoom);
+
+    // 5) 彙整匯入摘要，並列出無法自動歸類、需要人工確認的物件
+    const unresolvedList = [...unresolvedOther, ...unresolvedUncertain];
+    let msg = `✅ 已從「${fileName}」自動同步 2D Layout 辨識資料至「${room.roomName || room.roomId}」：\n`;
+    msg += `　• Zone：${room.zones.length} 個 (${zonePrefixes.join(', ')})\n`;
+    msg += `　• Rack Survey 機櫃：${newRacks.length} 台\n`;
+    msg += `　• White Space 冷卻設備：${newCoolingForRoom.length} 台\n`;
+    msg += `\n⚠️ 本次匯入以 JSON 為準，已整批覆蓋重建此機房的 Zone / Rack Survey / White Space Cooling 資料；機櫃容量、機櫃高度、冷卻設備型號等 JSON 未提供的欄位已重設為預設值，請重新逐一確認填寫。`;
+    if (unresolvedList.length > 0) {
+        msg += `\n\n🔎 另有 ${unresolvedList.length} 項物件無法自動判斷 Zone 歸屬或設備類型 (未自動加入 Rack / Cooling 表，僅顯示於平面圖供人工確認)：\n`;
+        msg += unresolvedList.map(o => `　- ${o.id}${o.evidence && o.evidence[0] ? ` (${o.evidence[0]})` : ''}`).join('\n');
+    }
+    alert(msg);
+
+    renderAll();
 }
 
 /*
@@ -3208,6 +3452,7 @@ function renderSensorsList() {
                 `}
             </td>
             <td><input type="text" class="form-control" value="${s.remarks}" ${isColdAisleAttached ? 'placeholder="請填入所在區域 (A, B, C...)"' : ''} onchange="updateSensor(${idx}, 'remarks', this.value)"></td>
+            <td>${renderPlacementBadge(s)}</td>
             <td><button class="btn btn-danger btn-sm" onclick="deleteSensor(${idx})">Delete</button></td>
         `;
         tbody.appendChild(tr);
@@ -3215,9 +3460,21 @@ function renderSensorsList() {
 
     if (state.sensors.length > 0 && visibleCount === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的感測器資料 / No sensors match the current filters</td>`;
+        tr.innerHTML = `<td colspan="9" style="text-align:center; color:var(--text-muted); padding:14px;">目前條件下無符合的感測器資料 / No sensors match the current filters</td>`;
         tbody.appendChild(tr);
     }
+}
+
+// 依 placementStatus 顯示徽章；未定位/已確認兩種狀態，可點擊直接跳到 Sensor Placement 分頁並選取該筆
+function renderPlacementBadge(s) {
+    const status = getPlacementStatus(s);
+    if (status === 'confirmed') {
+        return `<span style="background:#e3f9ef; color:#0b8457; font-size:0.72rem; padding:2px 8px; border-radius:10px; white-space:nowrap;" title="${s.heightCm != null ? '高度 ' + s.heightCm + ' cm' : ''}">✓ 已確認</span>`;
+    }
+    if (status === 'suggested') {
+        return `<span style="background:#fff4e0; color:#8a5a00; font-size:0.72rem; padding:2px 8px; border-radius:10px; white-space:nowrap; cursor:pointer;" onclick="jumpToPlacement('${s.sensorId}')" title="系統自動套用的建議位置，點擊前往確認">建議待確認</span>`;
+    }
+    return `<span style="background:#ffece8; color:#bf2600; font-size:0.72rem; padding:2px 8px; border-radius:10px; white-space:nowrap; cursor:pointer;" onclick="jumpToPlacement('${s.sensorId}')" title="點擊前往平面定位">未定位</span>`;
 }
 
 function updateSensor(idx, field, val) {
@@ -3372,7 +3629,1042 @@ function autoGenerateRackSensors() {
     saveLocalStorageDraft();
 }
 
-// --- 7. I/O TABLE ---
+// --- 7. SENSOR PLACEMENT (2D 平面定位) ---
+// 支援兩種底圖模式：
+//   'json'  — 房間已上傳實習生辨識演算法輸出的 2D Layout JSON (room.geometry.detectionJson)，
+//             直接用 JSON 裡的真實座標畫成可點擊的向量圖，使用者點擊的座標「本身就是」JSON 的座標系，
+//             不需要額外的比例尺換算，因此最終存下來的 planPosition 保證與 JSON 檔案完全對得上。
+//   'image' — 房間只有上傳一般影像/CAD 檔案，維持原本「以底圖百分比記錄座標」的做法 (準確度取決於使用者手點)。
+// 兩種模式互斥，優先使用 'json'。sensor.planPositionSpace 欄位記錄該筆資料是用哪種模式標記的，
+// 避免切換底圖來源後新舊資料的座標系混淆。
+
+// 暫存的互動狀態 (選取中的 sensor、點選但尚未確認的座標、JSON 模式下比對到的機櫃/設備/通道)，
+// 不寫入 state，因此不會被存檔/匯出。
+let placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+
+// JSON 模式下的縮放/平移視角，依房間索引各自保存 (不寫入 state)。使用者可滾輪縮放、按住拖曳平移，
+// 解決「SVG 在小螢幕上太擠」的問題──不用整張圖硬塞進小畫面，而是可以放大看局部細節。
+let placementViewBoxByRoom = {};
+let placementDrag = null;
+
+function zoomPlacement(factor) {
+    const roomIdx = state.activePlacementRoom;
+    const vb = placementViewBoxByRoom[roomIdx];
+    if (!vb) return;
+    const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2;
+    const newW = vb.w / factor, newH = vb.h / factor;
+    placementViewBoxByRoom[roomIdx] = { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH };
+    renderSensorPlacement();
+}
+
+function resetPlacementView() {
+    delete placementViewBoxByRoom[state.activePlacementRoom];
+    renderSensorPlacement();
+}
+
+// 滾輪縮放：以滑鼠所在的 SVG 座標為中心縮放，符合一般地圖/繪圖軟體的操作直覺。
+function handlePlacementWheel(evt, svgEl, roomIdx) {
+    evt.preventDefault();
+    const vb = placementViewBoxByRoom[roomIdx];
+    if (!vb) return;
+    const pt = svgEl.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const ctm = svgEl.getScreenCTM();
+    if (!ctm) return;
+    const svgP = pt.matrixTransform(ctm.inverse());
+    const factor = evt.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const newW = vb.w / factor, newH = vb.h / factor;
+    const newX = svgP.x - (svgP.x - vb.x) * (newW / vb.w);
+    const newY = svgP.y - (svgP.y - vb.y) * (newH / vb.h);
+    placementViewBoxByRoom[roomIdx] = { x: newX, y: newY, w: newW, h: newH };
+    renderSensorPlacement();
+}
+
+// 拖曳平移：mousedown 記錄起點，實際的 mousemove/mouseup 監聽掛在 document 上 (見腳本最下方)，
+// 這樣滑鼠拖曳到 SVG 範圍外也不會中斷平移。若整段拖曳幾乎沒有移動，放開時視為一次「點擊」，
+// 藉此跟「點擊平面圖標記感測器位置」的操作共用同一顆滑鼠按鍵，不會互相干擾。
+function handlePlacementMouseDown(evt, svgEl, roomIdx) {
+    const vb = placementViewBoxByRoom[roomIdx];
+    if (!vb) return;
+    placementDrag = { roomIdx, svgEl, startClientX: evt.clientX, startClientY: evt.clientY, startVB: { ...vb }, moved: false };
+}
+
+function handlePlacementMouseMove(evt) {
+    if (!placementDrag) return;
+    const dxPx = evt.clientX - placementDrag.startClientX;
+    const dyPx = evt.clientY - placementDrag.startClientY;
+    if (Math.abs(dxPx) > 3 || Math.abs(dyPx) > 3) placementDrag.moved = true;
+    if (!placementDrag.moved) return;
+    const rect = placementDrag.svgEl.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const scaleX = placementDrag.startVB.w / rect.width;
+    const scaleY = placementDrag.startVB.h / rect.height;
+    placementViewBoxByRoom[placementDrag.roomIdx] = {
+        x: placementDrag.startVB.x - dxPx * scaleX,
+        y: placementDrag.startVB.y - dyPx * scaleY,
+        w: placementDrag.startVB.w,
+        h: placementDrag.startVB.h
+    };
+    renderSensorPlacement();
+}
+
+document.addEventListener('mousemove', handlePlacementMouseMove);
+document.addEventListener('mouseup', function(evt) {
+    if (!placementDrag) return;
+    const wasClick = !placementDrag.moved;
+    const svgEl = placementDrag.svgEl;
+    const roomIdx = placementDrag.roomIdx;
+    placementDrag = null;
+    if (wasClick) handlePlacementSvgClick(evt, svgEl, roomIdx);
+});
+
+function getPlacementStatus(s) {
+    return s.placementStatus || 'unplaced';
+}
+
+// 依 sensor 的 rackId 反查所屬機房 roomId。
+// Rack 依附：rackId 本身就是機櫃編號 (如 "A-R1")，直接查 state.racks。
+// Hot/Cold Aisle 依附：rackId 僅作為 Zone 歸屬的參考值 (與 renderIoTable 的解析邏輯一致)，
+// 先取出 zoneId 前綴，再從該 zoneId 底下任一機櫃反查機房；若該 Zone 尚無機櫃則退而求其次，
+// 直接搜尋哪個房間的 zones 清單含有這個 zoneId。
+function getSensorRoomId(s) {
+    if (!s.rackId) return null;
+    if (s.attachment === 'Rack') {
+        const rack = state.racks.find(r => `${r.zoneId}-R${r.rackNo}` === s.rackId);
+        return rack ? rack.roomId : null;
+    }
+    const zoneId = s.rackId.replace(/-R\d+$/, '');
+    const rackInZone = state.racks.find(r => r.zoneId === zoneId);
+    if (rackInZone) return rackInZone.roomId;
+    const roomWithZone = state.rooms.find(r => (r.zones || []).some(z => z.zoneId === zoneId));
+    return roomWithZone ? roomWithZone.roomId : null;
+}
+
+// 依 Rack 高度與進/出風口位置給一個合理的高度建議值 (出風口預設頂部 15% 處、入風口預設底部 15% 處)；
+// 通道感測器則以房間淨高的一半當起始值。使用者可在確認前直接修改這個預設值。
+function getSuggestedHeightCm(s) {
+    if (s.attachment === 'Rack') {
+        const rack = state.racks.find(r => `${r.zoneId}-R${r.rackNo}` === s.rackId);
+        const h = rack ? (Number(rack.rackHeightCm) || 200) : 200;
+        return s.inletOrOutlet === 'Air Outlet' ? Math.round(h * 0.85) : Math.round(h * 0.15);
+    }
+    const room = state.rooms[state.activePlacementRoom];
+    const roomHeightM = room && room.geometry ? Number(room.geometry.roomHeight) || 2.5 : 2.5;
+    return Math.round((roomHeightM * 100) / 2);
+}
+
+// 判斷這個房間目前該用哪種底圖模式；優先使用辨識演算法的 JSON。
+function getRoomLayoutMode(room) {
+    if (room && room.geometry && room.geometry.detectionJson) return 'json';
+    const cadFiles = (room && room.geometry && room.geometry.cadFiles) || [];
+    if (cadFiles.some(f => f.fileData && f.fileData.startsWith('data:image'))) return 'image';
+    return 'none';
+}
+
+function switchPlacementRoom(idx) {
+    state.activePlacementRoom = idx;
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+}
+
+// 從 Sensors List 表格的「未定位」徽章點擊過來時呼叫：切到 Sensor Placement 分頁、
+// 自動切到該 sensor 所屬的機房分頁，並直接選取該筆 sensor 準備點選定位。
+function jumpToPlacement(sensorId) {
+    const idx = state.sensors.findIndex(s => s.sensorId === sensorId);
+    if (idx === -1) return;
+    const roomId = getSensorRoomId(state.sensors[idx]);
+    const roomIdx = state.rooms.findIndex(r => r.roomId === roomId);
+    if (roomIdx !== -1) state.activePlacementRoom = roomIdx;
+    selectSensorForReview(idx);
+
+    const btn = Array.from(document.querySelectorAll('.nav-tabs .tab-btn')).find(b => b.textContent.includes('Sensor Placement'));
+    switchTab('sensor-placement', btn);
+    renderSensorPlacement();
+}
+
+function selectSensorForPlacement(idx) {
+    placementSelection.sensorIdx = (placementSelection.sensorIdx === idx) ? null : idx;
+    placementSelection.pendingXY = null;
+    placementSelection.matchedEntity = null;
+    renderSensorPlacement();
+}
+
+// 使用者在「一般影像底圖」上點擊：只有在「已選取某顆待定位 sensor」時才記錄座標 (以底圖寬高的百分比儲存，
+// 不綁定像素值，避免縮放後跑版)，並跳出高度輸入的小視窗等待確認。
+function handlePlacementImageClick(evt, imgEl) {
+    if (placementSelection.sensorIdx === null) return;
+    const rect = imgEl.getBoundingClientRect();
+    const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
+    placementSelection.pendingXY = {
+        x: Math.max(0, Math.min(100, xPct)),
+        y: Math.max(0, Math.min(100, yPct))
+    };
+    placementSelection.matchedEntity = null;
+    renderSensorPlacement();
+}
+
+// 在 detectionJson 裡找出座標 (x,y) 落在哪個機櫃/空調/通道的 bbox 範圍內；用於 JSON 模式下
+// 點擊平面圖時自動比對出「使用者點在哪個已辨識物件上」，讓最終定位結果跟 JSON 檔案裡的物件 ID 有實際連結，
+// 而不只是存一組看起來合理、但沒人驗證過的座標數字。
+function findDetectionEntityAtPoint(det, x, y) {
+    const inBox = b => b && x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+    const racks = (det.equipment && det.equipment.racks) || [];
+    for (const r of racks) if (inBox(r.bbox)) return { type: 'rack', id: r.id, label: `機櫃 ${r.id}` };
+    const cooling = (det.equipment && det.equipment.cooling) || [];
+    for (const c of cooling) if (inBox(c.bbox)) return { type: 'cooling', id: c.id, label: `空調 ${c.id}` };
+    const containments = det.containments || [];
+    for (const c of containments) {
+        if (inBox(c.bbox)) {
+            return { type: 'containment', id: c.id, label: `${c.type === 'hot' ? '熱通道' : '冷通道'} ${c.id}` };
+        }
+    }
+    return null;
+}
+
+// --- 自動套用機櫃出/入風感測器建議位置 ---
+// FAE 工具的機櫃 ID 是 "C-R1" 這種「Zone + 編號」格式，JSON 辨識結果的機櫃 ID 是扁平的 "R1"、"R9" ...，
+// 兩邊沒有共同欄位可以直接對應，因此無法單純用字串比對。這裡採用「數量比對 + 空間排列順序」的配對方式：
+// 把 Rack Survey 裡的機櫃依 (zoneId, rackNo) 排序，視為「調查時的紀錄順序」；把 JSON 裡的機櫃依實際座標
+// 分排 (先依 y 座標分群成一排一排，同一排內再依 x 座標由左到右排序)，視為「現場由上到下、由左到右的閱讀順序」，
+// 兩個序列逐一對應。這只是一個合理的假設 (現場調查通常也是照這個順序記錄)，不是保證正確，
+// 所以：①機櫃數量對不上就直接中止，不亂猜；②套用結果一律標記成「suggested」而非「confirmed」，
+// 使用者仍要逐一確認過才算數，避免自動化結果沒人看過就變成正式定位資料。
+function clusterDetectionRacksIntoReadingOrder(racks) {
+    if (racks.length === 0) return [];
+    const avgH = racks.reduce((sum, r) => sum + (r.bbox.height || 0), 0) / racks.length;
+    const tol = Math.max(avgH * 0.5, 1);
+    const sorted = [...racks].sort((a, b) => a.center.y - b.center.y);
+    const rows = [];
+    sorted.forEach(r => {
+        let row = rows.find(row => Math.abs(row.avgY - r.center.y) < tol);
+        if (!row) { row = { avgY: r.center.y, items: [] }; rows.push(row); }
+        row.items.push(r);
+        row.avgY = row.items.reduce((s, x) => s + x.center.y, 0) / row.items.length;
+    });
+    rows.sort((a, b) => a.avgY - b.avgY);
+    rows.forEach(row => row.items.sort((a, b) => a.center.x - b.center.x));
+    return rows.flatMap(row => row.items);
+}
+
+// 建立 FAE 機櫃 ID ("C-R1") -> JSON 機櫃 ID 的對照表。
+// 新版辨識演算法輸出的 JSON 機櫃 ID 已經是「Zone-序號」格式 (如 "C-R1")，與 FAE 工具內部的
+// 機櫃 ID 命名慣例完全一致，因此優先嘗試「直接 ID 比對」(精準、不需要數量剛好相等)；
+// 只有在完全比對不到任何一台時，才退回舊版「數量須相等 + 空間排列順序猜測」的方式，
+// 以相容早期辨識演算法輸出的扁平 ID (如 "R1"、"R9"，沒有 Zone 前綴)。
+function buildRackCrosswalk(room, det) {
+    const racksForRoom = state.racks
+        .filter(r => r.roomId === room.roomId)
+        .slice()
+        .sort((a, b) => a.zoneId === b.zoneId ? a.rackNo - b.rackNo : a.zoneId.localeCompare(b.zoneId));
+    const detectionRacks = (det.equipment && det.equipment.racks) || [];
+    if (racksForRoom.length === 0) return { error: '此機房在 Rack Survey 裡尚未建立任何機櫃資料。' };
+    if (detectionRacks.length === 0) return { error: '這份 JSON 裡沒有偵測到任何機櫃 (equipment.racks 為空)。' };
+
+    // 優先嘗試直接 ID 比對 (新版 JSON：機櫃 ID 已含 Zone 前綴，格式與 Rack Survey 一致)
+    const detectionIds = new Set(detectionRacks.map(r => r.id));
+    const directMap = {};
+    let directMatchCount = 0;
+    racksForRoom.forEach(r => {
+        const rackId = `${r.zoneId}-R${r.rackNo}`;
+        if (detectionIds.has(rackId)) {
+            directMap[rackId] = rackId;
+            directMatchCount++;
+        }
+    });
+    if (directMatchCount === racksForRoom.length) {
+        return { map: directMap };
+    }
+    if (directMatchCount > 0) {
+        // 部分比對成功、部分沒有：ID 格式不一致或機櫃有新增/刪減，直接 ID 比對比空間順序猜測可靠，
+        // 為避免混用兩種配對邏輯造成錯亂，仍中止並請使用者先核對，而不是自動退回猜測法。
+        return { error: `機櫃 ID 部分無法直接比對：Rack Survey 有 ${racksForRoom.length} 台，JSON 裡只找到 ${directMatchCount} 台 ID 相符，請先核對機櫃數量與 ID 是否一致。` };
+    }
+
+    // 直接比對完全沒有命中 (通常代表這是舊版扁平 ID 的 JSON)，退回數量+空間順序猜測法
+    if (racksForRoom.length !== detectionRacks.length) {
+        return { error: `機櫃數量不一致：Rack Survey 有 ${racksForRoom.length} 台，JSON 辨識出 ${detectionRacks.length} 台，無法自動配對，請先核對數量。` };
+    }
+    const orderedDetection = clusterDetectionRacksIntoReadingOrder(detectionRacks);
+    const map = {};
+    racksForRoom.forEach((r, i) => {
+        map[`${r.zoneId}-R${r.rackNo}`] = orderedDetection[i].id;
+    });
+    return { map };
+}
+
+// 找出跟這顆機櫃 bbox 緊鄰 (x 範圍有重疊) 且距離最近的通道封閉區，藉此判斷機櫃的「朝向」──
+// 機櫃通常背對背排列、中間夾著熱通道，出風口面向熱通道、入風口面向冷通道 (或熱通道的另一側)。
+function findFacingAisle(rackBbox, det) {
+    const containments = det.containments || [];
+    let best = null, bestDist = Infinity;
+    containments.forEach(c => {
+        const b = c.bbox;
+        const overlap = Math.min(rackBbox.x + rackBbox.width, b.x + b.width) - Math.max(rackBbox.x, b.x);
+        if (overlap <= 0) return;
+        const rackCenterY = rackBbox.y + rackBbox.height / 2;
+        const contCenterY = b.y + b.height / 2;
+        const dist = Math.abs(contCenterY - rackCenterY);
+        if (dist < bestDist) {
+            bestDist = dist;
+            best = { type: c.type, below: contCenterY > rackCenterY };
+        }
+    });
+    return best;
+}
+
+// 依機櫃 bbox + 鄰近通道的方向，算出出風口/入風口的建議座標 (機櫃上緣或下緣的中點，並往內縮一點避免疊在框線上)。
+// 找不到鄰近通道時，退回機櫃中心點當作保底建議值。
+function computeRackSensorPoint(rackBbox, det, isOutlet) {
+    const cx = rackBbox.x + rackBbox.width / 2;
+    const facing = findFacingAisle(rackBbox, det);
+    if (!facing) return { x: cx, y: rackBbox.y + rackBbox.height / 2 };
+
+    const hotIsBelow = facing.type === 'hot' ? facing.below : !facing.below;
+    const useBottomEdge = isOutlet ? hotIsBelow : !hotIsBelow;
+    const inset = rackBbox.height * 0.1;
+    const y = useBottomEdge ? (rackBbox.y + rackBbox.height - inset) : (rackBbox.y + inset);
+    return { x: cx, y };
+}
+
+function autoMapRackSensors() {
+    const room = state.rooms[state.activePlacementRoom];
+    const det = room && room.geometry && room.geometry.detectionJson;
+    if (!det) { alert('⚠️ 此機房尚未匯入 2D Layout JSON。'); return; }
+
+    const crosswalk = buildRackCrosswalk(room, det);
+    if (crosswalk.error) { alert('⚠️ ' + crosswalk.error); return; }
+
+    const detRackById = {};
+    ((det.equipment && det.equipment.racks) || []).forEach(r => { detRackById[r.id] = r; });
+
+    let appliedCount = 0, skippedCount = 0;
+    state.sensors.forEach(s => {
+        if (s.attachment !== 'Rack') return;
+        if (getSensorRoomId(s) !== room.roomId) return;
+        if (getPlacementStatus(s) === 'confirmed') { skippedCount++; return; } // 已人工確認過的資料不覆蓋
+
+        const detRackId = crosswalk.map[s.rackId];
+        const detRack = detRackId ? detRackById[detRackId] : null;
+        if (!detRack) { skippedCount++; return; }
+
+        const isOutlet = s.inletOrOutlet === 'Air Outlet';
+        const pt = computeRackSensorPoint(detRack.bbox, det, isOutlet);
+        s.planPosition = { x: pt.x, y: pt.y };
+        if (s.heightCm == null) s.heightCm = getSuggestedHeightCm(s);
+        s.planPositionSpace = 'detection-real';
+        s.matchedEntityId = detRack.id;
+        s.matchedEntityType = 'rack';
+        s.placementStatus = 'suggested';
+        appliedCount++;
+    });
+
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+
+    if (appliedCount === 0) {
+        alert('ℹ️ 沒有可自動套用的機櫃感測器 (可能都已人工確認過，或機櫃配對失敗)。');
+    } else {
+        alert(`✅ 已自動套用 ${appliedCount} 顆機櫃出/入風感測器的建議位置 (標示為橘色「建議」，仍需逐一點開確認高度並按下「確認定位」才算正式生效)。${skippedCount > 0 ? `\n略過 ${skippedCount} 顆 (已確認過或找不到對應機櫃)。` : ''}`);
+    }
+}
+
+// 使用者在「JSON 向量平面圖」上點擊：透過 SVG 的 getScreenCTM() 反矩陣，把螢幕像素座標精確換算回
+// SVG viewBox 座標；因為 viewBox 本身就是直接採用 detectionJson 的真實座標範圍 (沒有另外做任何縮放/位移)，
+// 所以這裡算出來的 (x,y) 就是「與 JSON 檔案完全相同座標系」的真實座標，不需要任何額外校準。
+// 使用者在「JSON 向量平面圖」上點擊：直接完成定位 (不再需要另外按「確認」)。
+// 透過 SVG 的 getScreenCTM() 反矩陣，把螢幕像素座標精確換算回 SVG viewBox 座標；因為 viewBox 本身
+// 就是直接採用 detectionJson 的真實座標範圍 (沒有另外做任何縮放/位移)，所以這裡算出來的 (x,y)
+// 就是「與 JSON 檔案完全相同座標系」的真實座標，不需要任何額外校準。高度之後可以直接在清單上修改，
+// 不需要在這裡就決定好，減少「點一下還要再填高度再按確認」的操作次數。
+function handlePlacementSvgClick(evt, svgEl, roomIdx) {
+    if (placementSelection.sensorIdx === null) return;
+    const pt = svgEl.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    const ctm = svgEl.getScreenCTM();
+    if (!ctm) return;
+    const svgP = pt.matrixTransform(ctm.inverse());
+
+    const room = state.rooms[roomIdx];
+    const det = room && room.geometry && room.geometry.detectionJson;
+    const matched = det ? findDetectionEntityAtPoint(det, svgP.x, svgP.y) : null;
+
+    const idx = placementSelection.sensorIdx;
+    const s = state.sensors[idx];
+    s.planPosition = { x: svgP.x, y: svgP.y };
+    if (s.heightCm == null) s.heightCm = getSuggestedHeightCm(s);
+    s.planPositionSpace = 'detection-real';
+    s.matchedEntityId = matched ? matched.id : null;
+    s.matchedEntityType = matched ? matched.type : null;
+    s.placementStatus = 'confirmed';
+
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+
+    if (!matched && s.attachment === 'Rack') {
+        alert(`⚠️ ${s.sensorId} 的位置未落在任何已辨識的機櫃範圍內，仍已記錄此座標。如需調整，請重新點選這顆感測器後再點一次平面圖。`);
+    }
+}
+
+// 一般影像模式的「待確認」流程仍保留 (影像沒有可比對的機櫃/通道資料，所以維持原本點擊→輸入高度→確認的做法)。
+function confirmPendingPlacement() {
+    const { sensorIdx, pendingXY, matchedEntity } = placementSelection;
+    if (sensorIdx === null || !pendingXY) return;
+    const heightInput = document.getElementById('placementHeightInput');
+    const heightVal = heightInput ? Number(heightInput.value) : NaN;
+    if (!Number.isFinite(heightVal) || heightVal <= 0) {
+        alert('⚠️ 請輸入有效的高度數值 (cm)。');
+        return;
+    }
+    const room = state.rooms[state.activePlacementRoom];
+    const mode = getRoomLayoutMode(room);
+
+    const s = state.sensors[sensorIdx];
+    s.planPosition = { x: pendingXY.x, y: pendingXY.y };
+    s.heightCm = heightVal;
+    s.placementStatus = 'confirmed';
+    s.planPositionSpace = mode === 'json' ? 'detection-real' : 'image-pct';
+    s.matchedEntityId = (mode === 'json' && matchedEntity) ? matchedEntity.id : null;
+    s.matchedEntityType = (mode === 'json' && matchedEntity) ? matchedEntity.type : null;
+
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+}
+
+function cancelPendingPlacement() {
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+}
+
+// --- 清單列上的行內高度編輯 (取代原本「點開下方面板才能填高度」的做法) ---
+// 只要這顆 sensor 已經有座標 (不論是人工點出來的還是自動建議的)，清單上就會直接顯示一個高度輸入框，
+// 修改後直接寫入，不需要另外點開任何面板或再按一次確認。
+function updateRowHeight(idx, val) {
+    const h = Number(val);
+    if (!Number.isFinite(h) || h <= 0) {
+        alert('⚠️ 請輸入有效的高度數值 (cm)。');
+        renderSensorPlacement();
+        return;
+    }
+    state.sensors[idx].heightCm = h;
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+}
+
+// 把單一「建議」狀態的 sensor 提升為「已確認」；確認前檢查高度是否已填妥。
+function confirmRowPlacement(idx) {
+    const s = state.sensors[idx];
+    if (!s || !s.planPosition) return;
+    const h = Number(s.heightCm);
+    if (!Number.isFinite(h) || h <= 0) {
+        alert('⚠️ 請先在高度欄位輸入有效的數值再確認。');
+        return;
+    }
+    s.placementStatus = 'confirmed';
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+}
+
+// 一次把「目前房間」所有「建議」狀態且高度已填妥的 sensor 全部提升為「已確認」，
+// 解決自動套用建議位置之後、還要一顆一顆點開確認「太麻煩」的問題。
+function confirmAllSuggestedInRoom() {
+    const room = state.rooms[state.activePlacementRoom];
+    if (!room) return;
+    const roomSensors = state.sensors
+        .map((s, idx) => ({ s, idx }))
+        .filter(({ s }) => getSensorRoomId(s) === room.roomId);
+
+    let confirmedCount = 0, blockedCount = 0;
+    roomSensors.forEach(({ s }) => {
+        if (getPlacementStatus(s) !== 'suggested') return;
+        const h = Number(s.heightCm);
+        if (!Number.isFinite(h) || h <= 0) { blockedCount++; return; }
+        s.placementStatus = 'confirmed';
+        confirmedCount++;
+    });
+
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+
+    if (confirmedCount === 0 && blockedCount === 0) {
+        alert('ℹ️ 目前沒有「建議待確認」的感測器。');
+    } else {
+        alert(`✅ 已一次確認 ${confirmedCount} 顆感測器。${blockedCount > 0 ? `\n有 ${blockedCount} 顆因高度尚未填妥而略過，請先在清單上補上高度。` : ''}`);
+    }
+}
+
+// 「展開檢視」：把平面圖畫布放大成接近全螢幕高度的大圖，取代原本被夾在小框框裡的縮放，
+// 讓使用者真正能一次看清整層平面圖再點選定位，而不是在一個固定 560px 高的小方框裡瞇眼睛縮放。
+let placementExpanded = false;
+function togglePlacementExpanded() {
+    placementExpanded = !placementExpanded;
+    renderSensorPlacement();
+}
+
+// 完全清除一顆 sensor 的定位資料 (座標 + 高度 + 比對到的物件)，狀態回到「未定位」。
+// 用於使用者標錯位置想整個重來，或原本就不該定位這顆 sensor 的情況。
+function clearPlacement(idx) {
+    const s = state.sensors[idx];
+    if (!s) return;
+    if (!confirm(`確定要清除「${s.sensorId}」的定位資料嗎？座標與高度都會被清空，需要重新標記。`)) return;
+    s.planPosition = null;
+    s.heightCm = null;
+    s.placementStatus = 'unplaced';
+    s.planPositionSpace = null;
+    s.matchedEntityId = null;
+    s.matchedEntityType = null;
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+}
+
+// 一次清除「目前這個機房」所有 sensor 的定位資料 (座標 + 高度 + 比對到的物件)，全部回到「未定位」，
+// 讓使用者可以重新開始標記，不用一顆一顆手動清除。不影響其他機房的 sensor。
+function clearAllPlacementsInRoom() {
+    const room = state.rooms[state.activePlacementRoom];
+    if (!room) return;
+    const roomSensors = state.sensors
+        .map((s, idx) => ({ s, idx }))
+        .filter(({ s }) => getSensorRoomId(s) === room.roomId && s.placementStatus && s.placementStatus !== 'unplaced');
+
+    if (roomSensors.length === 0) {
+        alert('ℹ️ 此機房目前沒有已定位的感測器。');
+        return;
+    }
+    if (!confirm(`⚠️ 確定要清除「${room.roomName || room.roomId}」所有感測器的定位資料嗎？\n\n共 ${roomSensors.length} 顆感測器的座標與高度都會被清空，需要重新標記。此動作不影響其他機房。`)) return;
+
+    roomSensors.forEach(({ s }) => {
+        s.planPosition = null;
+        s.heightCm = null;
+        s.placementStatus = 'unplaced';
+        s.planPositionSpace = null;
+        s.matchedEntityId = null;
+        s.matchedEntityType = null;
+    });
+    placementSelection = { sensorIdx: null, pendingXY: null, matchedEntity: null };
+    renderSensorPlacement();
+    renderSensorsList();
+    saveLocalStorageDraft();
+    alert(`✅ 已清除 ${roomSensors.length} 顆感測器的定位資料，可以重新開始標記。`);
+}
+
+// 一鍵生成「更新後的 Layout JSON」：把這個機房目前已標記的 sensor 定位資訊 (座標/高度/比對到的物件)，
+// 合併寫回原本上傳的辨識演算法 2D Layout JSON 檔案中，輸出成一份新的 .json 檔給使用者下載。
+// 只處理「JSON 模式」下產生的座標 (planPositionSpace === 'detection-real')，因為只有這種座標
+// 跟原始 JSON 檔案共用同一套真實座標系，可以直接寫回去對得上；尚未標記 (unplaced) 的 sensor 不寫入。
+// 採「深拷貝後新增欄位」的方式，不覆蓋/刪除原始 JSON 裡辨識演算法輸出的任何既有內容 (floors / equipment / containments 等)，
+// 只是額外附加 sensors / sensorLayoutMeta 兩個欄位，確保原始資料保持完整、可被其他系統安全地忽略新欄位繼續使用。
+function exportUpdatedLayoutJson() {
+    const room = state.rooms[state.activePlacementRoom];
+    if (!room) return;
+    const det = room.geometry && room.geometry.detectionJson;
+    if (!det) {
+        alert('⚠️ 此機房尚未匯入 2D Layout JSON，無法生成更新後的檔案。請先至「2. Layout & Geometry」分頁上傳。');
+        return;
+    }
+
+    const roomSensors = state.sensors.filter(s =>
+        getSensorRoomId(s) === room.roomId &&
+        s.planPosition &&
+        s.planPositionSpace === 'detection-real' &&
+        s.placementStatus && s.placementStatus !== 'unplaced'
+    );
+
+    if (roomSensors.length === 0) {
+        if (!confirm('ℹ️ 此機房目前沒有任何已標記座標的感測器。\n\n仍要匯出這份 Layout JSON（不含任何 sensor 資料，等同原始檔案）嗎？')) return;
+    }
+
+    // 深拷貝原始 JSON，避免動到畫面上正在使用中的 detectionJson 物件本身
+    let updated;
+    try {
+        updated = JSON.parse(JSON.stringify(det));
+    } catch (e) {
+        alert('⚠️ 讀取原始 Layout JSON 內容時發生錯誤，無法生成更新後的檔案：' + e.message);
+        return;
+    }
+
+    updated.sensors = roomSensors.map(s => ({
+        id: s.sensorId,
+        type: s.sensorType,
+        attachment: s.attachment,
+        rackId: s.rackId || null,
+        inletOrOutlet: s.inletOrOutlet || null,
+        hotAisleId: s.hotAisleId || null,
+        position: { x: s.planPosition.x, y: s.planPosition.y },
+        heightCm: s.heightCm,
+        placementStatus: s.placementStatus,
+        matchedEntityId: s.matchedEntityId || null,
+        matchedEntityType: s.matchedEntityType || null,
+        remarks: s.remarks || ''
+    }));
+
+    // 將 Rack Survey 裡的機櫃高度 (rackHeightCm) 一併寫回 equipment.racks[]，讓匯出的 Layout JSON
+    // 除了 sensor 定位資訊外，也能看到每台機櫃的實際高度 (原始辨識 JSON 只有平面 bbox，沒有這個欄位)。
+    // 沿用既有的 buildRackCrosswalk() 比對邏輯 (優先直接 ID 比對，比對不到才用數量+空間排列順序猜測)；
+    // 只有在能安全建立對照表時才寫入，比對失敗 (數量不符/ID 部分不符) 就跳過，避免把錯誤的高度值
+    // 誤植到不相干的機櫃上——此時只在匯出結果的提示訊息中告知使用者原因，不中斷整個匯出流程。
+    let rackHeightWarning = null;
+    let rackHeightWrittenCount = 0;
+    if (updated.equipment && Array.isArray(updated.equipment.racks) && updated.equipment.racks.length > 0) {
+        const crosswalk = buildRackCrosswalk(room, updated);
+        if (crosswalk.map) {
+            const heightByDetectionId = {};
+            state.racks.filter(r => r.roomId === room.roomId).forEach(r => {
+                const faeId = `${r.zoneId}-R${r.rackNo}`;
+                const detId = crosswalk.map[faeId];
+                if (detId) heightByDetectionId[detId] = Number(r.rackHeightCm) || null;
+            });
+            updated.equipment.racks.forEach(rk => {
+                if (heightByDetectionId[rk.id] != null) {
+                    rk.rackHeightCm = heightByDetectionId[rk.id];
+                    rackHeightWrittenCount++;
+                }
+            });
+        } else {
+            rackHeightWarning = crosswalk.error;
+        }
+    }
+
+    updated.sensorLayoutMeta = {
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'ACES FAE Tool - Sensor Placement',
+        siteId: state.siteInfo && state.siteInfo.siteId || '',
+        roomId: room.roomId,
+        roomName: room.roomName || '',
+        sourceFileName: room.geometry.detectionJsonFileName || null,
+        sensorCount: roomSensors.length,
+        rackHeightWrittenCount: rackHeightWrittenCount,
+        rackHeightWarning: rackHeightWarning
+    };
+
+    const jsonStr = JSON.stringify(updated, null, 2);
+
+    // 檔名：沿用原始檔名，去掉 .json 副檔名後加上 "_with_sensors"，方便使用者辨識這是「已寫入 sensor 資料」的版本，
+    // 同時仍看得出來源是哪一份原始檔案。
+    const origName = room.geometry.detectionJsonFileName || `detection_result_${room.roomId}.json`;
+    const lowerName = origName.toLowerCase();
+    const baseName = lowerName.endsWith('.json') ? origName.substring(0, origName.length - 5) : origName;
+    const fileName = `${baseName}_with_sensors.json`;
+
+    downloadFile(fileName, jsonStr, 'application/json');
+
+    let summaryMsg = `✅ 已生成更新後的 Layout JSON：${fileName}\n共寫入 ${roomSensors.length} 顆感測器的定位資訊`;
+    if (rackHeightWrittenCount > 0) {
+        summaryMsg += `，並補上 ${rackHeightWrittenCount} 台機櫃的高度 (rackHeightCm)`;
+    }
+    summaryMsg += '（原始 JSON 內容維持不變，僅新增/補充 sensors、equipment.racks[].rackHeightCm、sensorLayoutMeta 欄位）。';
+    if (rackHeightWarning) {
+        summaryMsg += `\n\n⚠️ 機櫃高度這次未能自動寫入：${rackHeightWarning}`;
+    }
+    alert(summaryMsg);
+}
+
+// 選取一顆 sensor 準備檢視/編輯定位：若該 sensor 已有座標 (不論是人工確認過還是系統自動建議的)，
+// 直接帶入原本的座標與比對到的物件當作預設值，讓使用者可以馬上看到、直接確認或微調，不用重點一次。
+function selectSensorForReview(idx) {
+    const s = state.sensors[idx];
+    const room = state.rooms[state.activePlacementRoom];
+    const det = room && room.geometry && room.geometry.detectionJson;
+    placementSelection.sensorIdx = idx;
+    placementSelection.pendingXY = s.planPosition ? { x: s.planPosition.x, y: s.planPosition.y } : null;
+    placementSelection.matchedEntity = (det && s.planPosition && s.planPositionSpace === 'detection-real')
+        ? findDetectionEntityAtPoint(det, s.planPosition.x, s.planPosition.y)
+        : (s.matchedEntityId ? { type: s.matchedEntityType, id: s.matchedEntityId, label: s.matchedEntityId } : null);
+}
+
+// 允許使用者重新調整已確認/建議的座標：點擊平面圖上已存在的 pin 時，重新進入「待確認」狀態，
+// 但保留原本的座標與高度當作預設值，方便微調而不用整個重點一次。
+function reopenPlacementForEdit(idx) {
+    selectSensorForReview(idx);
+    renderSensorPlacement();
+}
+
+function renderPlacementRoomTabs() {
+    const nav = document.getElementById('placementRoomTabNav');
+    if (!nav) return;
+    nav.innerHTML = '';
+    state.rooms.forEach((r, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `sub-tab-btn ${idx === state.activePlacementRoom ? 'active' : ''}`;
+        btn.textContent = `${r.roomId} (${r.roomName})`;
+        btn.onclick = () => switchPlacementRoom(idx);
+        nav.appendChild(btn);
+    });
+}
+
+// 左側 sensor 清單的 HTML，兩種底圖模式共用。mode 為 'json' 時，點擊清單列一律是「選取準備點地圖」，
+// 不會另外開下方的確認面板 (JSON 模式已經不用那個面板了)。
+function renderPlacementSensorListHtml(roomSensors, mode) {
+    if (roomSensors.length === 0) return `<div class="placement-empty-hint">此機房目前沒有對應的感測器。</div>`;
+    return roomSensors.map(({ s, idx }) => {
+        const status = getPlacementStatus(s);
+        const isSelected = placementSelection.sensorIdx === idx;
+        const isAisleAttached = s.attachment === 'Hot Aisle' || s.attachment === 'Cold Aisle';
+        let subLine = s.attachment;
+        if (s.attachment === 'Rack') {
+            subLine += ' · ' + s.rackId + ' · ' + (s.inletOrOutlet || '');
+        } else if (isAisleAttached) {
+            subLine += ' · ' + (s.sensorType === 'Humidity Sensor' ? '濕度計' : '溫度計');
+            if (s.remarks) subLine += ' · ' + s.remarks;
+        }
+        const matchedTag = (status !== 'unplaced' && s.matchedEntityId) ? ` · 對應 ${s.matchedEntityId}` : '';
+        const clickHandler = (mode === 'json' || status === 'unplaced')
+            ? `selectSensorForPlacement(${idx})`
+            : `reopenPlacementForEdit(${idx})`;
+
+        // 只要已經有座標 (建議或已確認)，就直接在清單上顯示高度輸入框，不用點開任何面板。
+        const heightRow = s.planPosition ? `
+            <div style="display:flex; align-items:center; gap:6px; margin-top:6px;" onclick="event.stopPropagation()">
+                <label style="font-size:0.68rem; color:var(--text-muted); flex-shrink:0;">高度(cm)</label>
+                <input type="number" class="form-control" style="width:64px; padding:2px 4px; font-size:0.75rem; height:26px;"
+                       value="${s.heightCm != null ? s.heightCm : getSuggestedHeightCm(s)}"
+                       onchange="updateRowHeight(${idx}, this.value)">
+                ${status === 'suggested' ? `<button class="btn btn-primary btn-sm" style="padding:2px 8px; font-size:0.7rem; flex-shrink:0;" onclick="confirmRowPlacement(${idx})">確認</button>` : ''}
+            </div>
+        ` : '';
+
+        return `
+            <div class="placement-sensor-item ${isSelected ? 'selected' : ''}" onclick="${clickHandler}">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                    <strong style="overflow-wrap:break-word; min-width:0;">${s.sensorId}</strong>
+                    <span style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                        ${status !== 'unplaced' ? `<span style="font-size:0.68rem; color:var(--text-muted); cursor:pointer;" title="清除定位" onclick="event.stopPropagation(); clearPlacement(${idx})">✕</span>` : ''}
+                        <span class="placement-status-dot placement-status-${status}"></span>
+                    </span>
+                </div>
+                <div style="color:var(--text-muted); font-size:0.72rem; margin-top:2px; overflow-wrap:break-word;">${subLine}${matchedTag}</div>
+                ${heightRow}
+            </div>
+        `;
+    }).join('');
+}
+
+// 依 sensor 的依附物件，組出確認視窗裡「這是什麼」的描述文字，兩種底圖模式共用。
+function describeSensorForPlacement(s) {
+    if (s.attachment === 'Rack') {
+        return s.inletOrOutlet === 'Air Outlet' ? '出風口' : '入風口';
+    }
+    if (s.attachment === 'Hot Aisle' || s.attachment === 'Cold Aisle') {
+        let desc = (s.attachment === 'Hot Aisle' ? '熱通道' : '冷通道') + ' · ' + (s.sensorType === 'Humidity Sensor' ? '濕度計' : '溫度計');
+        if (s.remarks) desc += ' · ' + s.remarks;
+        return desc;
+    }
+    return s.attachment;
+}
+
+function renderSensorPlacement() {
+    renderPlacementRoomTabs();
+    const body = document.getElementById('placementBody');
+    const progressEl = document.getElementById('placementProgress');
+    if (!body) return;
+
+    // 記住目前清單的捲動位置：因為每次點選都會整個重畫 innerHTML，
+    // 若不手動還原，捲動位置會被重置回頂端，點選項目後畫面會往上跳。
+    const prevListEl = body.querySelector('.placement-sensor-list');
+    const prevScrollTop = prevListEl ? prevListEl.scrollTop : 0;
+
+    const room = state.rooms[state.activePlacementRoom];
+    if (!room) {
+        body.innerHTML = `<div class="placement-empty-hint">請先至「1. Site Master」新增機房。</div>`;
+        if (progressEl) progressEl.textContent = '';
+        return;
+    }
+
+    const roomSensors = state.sensors
+        .map((s, idx) => ({ s, idx }))
+        .filter(({ s }) => getSensorRoomId(s) === room.roomId);
+
+    const confirmedCount = roomSensors.filter(({ s }) => getPlacementStatus(s) === 'confirmed').length;
+    if (progressEl) {
+        progressEl.textContent = roomSensors.length > 0
+            ? `${room.roomId}：${confirmedCount} / ${roomSensors.length} 已定位`
+            : '';
+    }
+
+    const mode = getRoomLayoutMode(room);
+    const listHtml = renderPlacementSensorListHtml(roomSensors, mode);
+
+    if (mode === 'none') {
+        body.innerHTML = `
+            <div class="placement-layout">
+                <div class="placement-sensor-list">${listHtml}</div>
+                <div class="placement-canvas-wrap">
+                    <div class="placement-empty-hint">
+                        此機房尚未有可用的平面圖。<br>
+                        請先至「2. Layout &amp; Geometry」分頁，上傳實習生辨識演算法輸出的 <strong>.json</strong> 檔案 (可自動畫出向量平面圖並精確對應座標)，<br>
+                        或上傳一般的 PNG/JPG 平面圖影像 (以人工點選記錄座標，準確度取決於人工判讀)。
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (mode === 'json') {
+        renderSensorPlacementJsonMode(room, roomSensors, listHtml, body);
+    } else {
+        renderSensorPlacementImageMode(room, roomSensors, listHtml, body);
+    }
+
+    const newListEl = body.querySelector('.placement-sensor-list');
+    if (newListEl && prevScrollTop) newListEl.scrollTop = prevScrollTop;
+}
+
+// --- JSON 模式：直接用 detectionJson 的真實座標畫成可點擊的向量平面圖 ---
+function renderSensorPlacementJsonMode(room, roomSensors, listHtml, body) {
+    const det = room.geometry.detectionJson;
+    const floor = det.floors && det.floors[0];
+    if (!floor || !floor.bbox) {
+        body.innerHTML = `
+            <div class="placement-layout">
+                <div class="placement-sensor-list">${listHtml}</div>
+                <div class="placement-canvas-wrap"><div class="placement-empty-hint">這份 JSON 缺少 floors[0].bbox，無法畫出平面圖範圍，請確認檔案格式。</div></div>
+            </div>
+        `;
+        return;
+    }
+
+    const fb = floor.bbox;
+    const scaleUnit = Math.max(fb.width, fb.height) || 1;
+    const strokeW = scaleUnit * 0.0025;
+    const fontSize = scaleUnit * 0.016;
+    const margin = scaleUnit * 0.03;
+    const defaultVB = { x: fb.x - margin, y: fb.y - margin, w: fb.width + margin * 2, h: fb.height + margin * 2 };
+
+    // 縮放/平移視角依房間各自保存，第一次進來或按過「還原視角」時才用預設的整層範圍。
+    const roomIdx = state.activePlacementRoom;
+    if (!placementViewBoxByRoom[roomIdx]) placementViewBoxByRoom[roomIdx] = { ...defaultVB };
+    const vb = placementViewBoxByRoom[roomIdx];
+    const viewBox = `${vb.x} ${vb.y} ${vb.w} ${vb.h}`;
+
+    // 物件 ID 標籤字體：早期版本一律用「整層平面圖」推算出的固定字級，導致機櫃/冷卻設備這種
+    // 小方框被塞進過大的文字，字幾乎頂到框邊、彼此擠在一起。這裡改成依「該物件自己的框大小 + 文字長度」
+    // 反推一個剛好放得下 (並留一點邊距) 的字級，同時仍以原本的 fontSize 當作上限，
+    // 大型物件 (如熱通道封閉框) 因為本來就放得下，字級不會被放大，維持原本觀感。
+    const fitLabelFontSize = (b, text, maxSize) => {
+        const chars = Math.max(String(text).length, 1);
+        const byWidth = (b.width * 0.82) / (chars * 0.62);
+        const byHeight = b.height * 0.42;
+        return Math.max(Math.min(byWidth, byHeight, maxSize), maxSize * 0.22);
+    };
+    const label = (cx, cy, text, fill, size) =>
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-size="${size}" font-weight="600" fill="${fill}" style="pointer-events:none;">${text}</text>`;
+
+    let shapes = '';
+    (det.floors || []).forEach(f => {
+        const b = f.bbox;
+        shapes += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="none" stroke="#888880" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 5},${strokeW * 3}"></rect>`;
+    });
+    (det.containments || []).forEach(c => {
+        const b = c.bbox;
+        const isHot = c.type === 'hot';
+        const fill = isHot ? '#F7C1C1' : '#B5D4F4';
+        const stroke = isHot ? '#E24B4A' : '#378ADD';
+        const text = `${c.id} (${isHot ? '熱通道' : '冷通道'})`;
+        shapes += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="${fill}" fill-opacity="0.5" stroke="${stroke}" stroke-width="${strokeW}"></rect>`;
+        shapes += label(c.center.x, c.center.y, text, '#4A1B0C', fitLabelFontSize(b, text, fontSize));
+    });
+    ((det.equipment && det.equipment.racks) || []).forEach(r => {
+        const b = r.bbox;
+        shapes += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="#9FE1CB" fill-opacity="0.85" stroke="#0F6E56" stroke-width="${strokeW}"></rect>`;
+        shapes += label(r.center.x, r.center.y, r.id, '#04342C', fitLabelFontSize(b, r.id, fontSize));
+    });
+    ((det.equipment && det.equipment.cooling) || []).forEach(c => {
+        const b = c.bbox;
+        shapes += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="#CECBF6" fill-opacity="0.85" stroke="#3C3489" stroke-width="${strokeW}"></rect>`;
+        shapes += label(c.center.x, c.center.y, c.id, '#26215C', fitLabelFontSize(b, c.id, fontSize));
+    });
+    ((det.unresolved && det.unresolved.other) || []).forEach(o => {
+        const b = o.bbox;
+        shapes += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="none" stroke="#B4B2A9" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 3},${strokeW * 2}"></rect>`;
+    });
+
+    // 找出感測器比對到的物件 bbox (機櫃/冷卻設備/通道)，用來判斷「感測器名稱標籤」該往哪個方向拉線，
+    // 才不會剛好蓋在該物件置中顯示的 ID 標籤上面。
+    const findMatchedBbox = s => {
+        if (!s.matchedEntityId) return null;
+        if (s.matchedEntityType === 'rack') return (((det.equipment && det.equipment.racks) || []).find(r => r.id === s.matchedEntityId) || {}).bbox || null;
+        if (s.matchedEntityType === 'cooling') return (((det.equipment && det.equipment.cooling) || []).find(r => r.id === s.matchedEntityId) || {}).bbox || null;
+        if (s.matchedEntityType === 'containment') return ((det.containments || []).find(r => r.id === s.matchedEntityId) || {}).bbox || null;
+        return null;
+    };
+
+    // sensor pin：綠色代表已人工確認，橘色代表「自動套用的建議位置」尚待確認 (僅顯示以 JSON 真實座標
+    // 記錄的資料；舊的百分比資料屬於不同座標系，這裡不繪製)。目前選取中的那顆額外加一圈藍色外框，
+    // 提示使用者「下一次點擊平面圖，會把這顆感測器移到新的位置」。
+    // 每顆 pin 另外拉一條細線，在線的末端標出感測器名稱：拉線方向依「pin 相對於所在物件中心的上下位置」
+    // 決定 (pin 在物件上半部就往上拉、下半部就往下拉)，這樣名稱標籤會落在物件框的外側，
+    // 不會疊在物件中央的 ID 文字上面；找不到對應物件時預設往上拉。
+    const pinR = scaleUnit * 0.008;
+    const leaderLen = scaleUnit * 0.03;
+    const nameFontSize = scaleUnit * 0.011;
+    let pinsShape = '';
+    let selectedRingShape = '';
+    roomSensors.forEach(({ s, idx }) => {
+        if (!s.planPosition || s.planPositionSpace !== 'detection-real') return;
+        const isSuggested = s.placementStatus === 'suggested';
+        const fillColor = isSuggested ? '#EF9F27' : '#639922';
+        const px = s.planPosition.x, py = s.planPosition.y;
+
+        const matchedBbox = findMatchedBbox(s);
+        const dirDown = matchedBbox ? (py > matchedBbox.y + matchedBbox.height / 2) : false;
+        const lx = px;
+        const ly = py + (dirDown ? leaderLen : -leaderLen);
+
+        const nameText = s.sensorId || '';
+        const nameW = Math.max(nameText.length, 1) * nameFontSize * 0.62 + nameFontSize * 0.7;
+        const nameH = nameFontSize * 1.35;
+        pinsShape += `<line x1="${px}" y1="${py}" x2="${lx}" y2="${ly}" stroke="${fillColor}" stroke-width="${strokeW * 0.7}" style="pointer-events:none;"></line>`;
+        pinsShape += `<rect x="${lx - nameW / 2}" y="${ly - nameH / 2}" width="${nameW}" height="${nameH}" fill="white" fill-opacity="0.85" rx="${nameFontSize * 0.25}" stroke="${fillColor}" stroke-width="${strokeW * 0.4}" style="pointer-events:none;"></rect>`;
+        pinsShape += label(lx, ly, nameText, '#222', nameFontSize);
+
+        pinsShape += `<circle cx="${px}" cy="${py}" r="${pinR}" fill="${fillColor}" stroke="white" stroke-width="${strokeW}"
+            style="cursor:pointer;" onclick="event.stopPropagation(); selectSensorForPlacement(${idx})"><title>${s.sensorId}${isSuggested ? '（建議，待確認）' : ''} · ${s.heightCm} cm</title></circle>`;
+        if (idx === placementSelection.sensorIdx) {
+            selectedRingShape = `<circle cx="${px}" cy="${py}" r="${pinR * 2}" fill="none" stroke="#185FA5" stroke-width="${strokeW * 1.5}"></circle>`;
+        }
+    });
+
+    const svgHtml = `
+        <svg viewBox="${viewBox}" style="width:100%; height:100%; display:block;"
+             onmousedown="handlePlacementMouseDown(event, this, ${roomIdx})"
+             onwheel="handlePlacementWheel(event, this, ${roomIdx})">
+            ${shapes}
+            ${pinsShape}
+            ${selectedRingShape}
+        </svg>
+    `;
+
+    const selectedSensor = placementSelection.sensorIdx !== null ? state.sensors[placementSelection.sensorIdx] : null;
+    const hintText = selectedSensor
+        ? `已選取 <strong>${selectedSensor.sensorId}</strong>，請到右邊平面圖上點擊要標記的位置（點擊後立即定位，高度可之後在清單上調整）。`
+        : `從左側清單點選一顆感測器，再到右側平面圖上點擊要標記的位置，系統會自動比對是否落在某個已辨識的機櫃/空調/通道範圍內並立即完成定位。`;
+
+    body.innerHTML = `
+        <div class="placement-layout">
+            <div>
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-outline btn-sm" onclick="autoMapRackSensors()">⚡ 自動套用建議位置</button>
+                </div>
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-primary btn-sm" onclick="confirmAllSuggestedInRoom()">✓ 全部確認建議位置</button>
+                </div>
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-primary btn-sm" onclick="exportUpdatedLayoutJson()">📤 匯出更新後的 Layout JSON</button>
+                </div>
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-outline btn-sm" style="color:var(--danger, #d32f2f); border-color:var(--danger, #d32f2f);" onclick="clearAllPlacementsInRoom()">🗑 清除所有定位</button>
+                </div>
+                <div class="placement-sensor-list">${listHtml}</div>
+            </div>
+            <div class="placement-canvas-col">
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-outline btn-sm" onclick="togglePlacementExpanded()">${placementExpanded ? '↙ 還原版面' : '⤢ 展開檢視'}</button>
+                    <button class="btn btn-outline btn-sm" onclick="zoomPlacement(1.4)" title="放大">🔍＋</button>
+                    <button class="btn btn-outline btn-sm" onclick="zoomPlacement(1/1.4)" title="縮小">🔍－</button>
+                    <button class="btn btn-outline btn-sm" onclick="resetPlacementView()" title="還原成整層平面圖">還原視角</button>
+                    <span style="font-size:0.72rem; color:var(--text-muted);">滑鼠滾輪可縮放；按住拖曳可平移</span>
+                </div>
+                <div class="placement-canvas-wrap ${placementExpanded ? 'expanded' : ''}">${svgHtml}</div>
+            </div>
+        </div>
+        <div style="margin-top:10px; font-size:0.78rem; color:var(--text-muted);">
+            💡 ${hintText}<br>
+            橘色圓點代表系統自動套用的建議位置，尚待確認；綠色代表已確認。高度欄位直接在左側清單上編輯即可，不用另外點開視窗。<br>
+            每個圓點旁會拉一條細線標出感測器名稱（往物件框外側拉，避免蓋住機櫃/設備 ID）；若定位標記太多想重新開始，可用左上角「清除所有定位」一次清空本機房。<br>
+            📤 標記完成後，可點「匯出更新後的 Layout JSON」，系統會把目前已標記（含建議中）的感測器座標/高度資訊、以及 Rack Survey 裡的機櫃高度 (rackHeightCm)，一併寫回原本上傳的這份 2D Layout JSON 檔案中，下載成一份新檔案，方便交付或匯入其他系統。
+        </div>
+    `;
+}
+
+// --- 一般影像模式：維持原本「以底圖百分比記錄座標」的做法 ---
+function renderSensorPlacementImageMode(room, roomSensors, listHtml, body) {
+    const cadFiles = room.geometry.cadFiles || [];
+    const bgImage = cadFiles.find(f => f.fileData && f.fileData.startsWith('data:image'));
+    if (!bgImage) {
+        body.innerHTML = `<div class="placement-empty-hint">此機房尚未上傳平面圖影像 (PNG/JPG)。<br>請先至「2. Layout &amp; Geometry」分頁上傳 2D 平面圖後再回來定位。</div>`;
+        return;
+    }
+
+    const pinsHtml = roomSensors
+        .filter(({ s, idx }) => s.planPosition && s.planPositionSpace !== 'detection-real' && idx !== placementSelection.sensorIdx)
+        .map(({ s, idx }) => `
+            <div class="placement-pin confirmed" title="${s.sensorId} (${s.heightCm} cm)"
+                 style="left:${s.planPosition.x}%; top:${s.planPosition.y}%;"
+                 onclick="event.stopPropagation(); reopenPlacementForEdit(${idx})"></div>
+        `).join('');
+
+    let pendingPinHtml = '';
+    let confirmBoxHtml = '';
+    if (placementSelection.sensorIdx !== null && placementSelection.pendingXY) {
+        const { x, y } = placementSelection.pendingXY;
+        pendingPinHtml = `<div class="placement-pin pending" style="left:${x}%; top:${y}%;"></div>`;
+        const boxLeft = x > 60 ? Math.max(0, x - 34) : x + 4;
+        confirmBoxHtml = `
+            <div class="placement-confirm-box" style="left:${boxLeft}%; top:${y}%;">
+                ${buildPlacementConfirmFieldsHtml()}
+            </div>
+        `;
+    }
+
+    body.innerHTML = `
+        <div class="placement-layout">
+            <div>
+                <div class="placement-zoom-bar">
+                    <button class="btn btn-outline btn-sm" style="color:var(--danger, #d32f2f); border-color:var(--danger, #d32f2f);" onclick="clearAllPlacementsInRoom()">🗑 清除所有定位</button>
+                </div>
+                <div class="placement-sensor-list">${listHtml}</div>
+            </div>
+            <div class="placement-canvas-wrap" style="position:relative;">
+                <img src="${bgImage.fileData}" alt="2D 平面圖" onclick="handlePlacementImageClick(event, this)">
+                ${pinsHtml}
+                ${pendingPinHtml}
+                ${confirmBoxHtml}
+            </div>
+        </div>
+        <div style="margin-top:10px; font-size:0.78rem; color:var(--text-muted);">
+            💡 從左側清單點選一顆感測器，再到右側平面圖上點擊要標記的位置，接著輸入高度並按「確認定位」。已定位的感測器可點擊圖上的圓點重新調整。
+        </div>
+    `;
+}
+
+// 確認欄位的核心內容 (標題、描述、比對到的物件、高度輸入、按鈕)，JSON 模式與影像模式共用。
+function buildPlacementConfirmFieldsHtml() {
+    const { sensorIdx, matchedEntity } = placementSelection;
+    const s = state.sensors[sensorIdx];
+    const suggested = s.heightCm != null ? s.heightCm : getSuggestedHeightCm(s);
+    const isEditingExisting = getPlacementStatus(s) !== 'unplaced';
+    const matchedHtml = matchedEntity
+        ? `<div style="font-size:0.75rem; color:#0f6e56; background:#e3f9ef; padding:4px 8px; border-radius:4px; margin-bottom:8px;">✓ 已比對到：${matchedEntity.label}</div>`
+        : (getRoomLayoutMode(state.rooms[state.activePlacementRoom]) === 'json'
+            ? `<div style="font-size:0.75rem; color:#bf6a00; background:#fff4e5; padding:4px 8px; border-radius:4px; margin-bottom:8px;">⚠ 此位置未落在任何已辨識物件範圍內</div>`
+            : '');
+    return `
+        <div style="font-weight:600; font-size:0.85rem; margin-bottom:4px;">${s.sensorId}</div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px;">${describeSensorForPlacement(s)}</div>
+        ${matchedHtml}
+        <label style="font-size:0.75rem; color:var(--text-muted);">高度 (cm)</label>
+        <input id="placementHeightInput" type="number" class="form-control" style="margin:4px 0 10px;" value="${suggested}">
+        <div style="display:flex; gap:6px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="confirmPendingPlacement()">確認定位</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelPendingPlacement()">取消</button>
+        </div>
+        ${isEditingExisting ? `<button class="btn btn-danger btn-sm" style="width:100%; margin-top:6px;" onclick="clearPlacement(${sensorIdx})">清除定位</button>` : ''}
+    `;
+}
+
+// --- 8. I/O TABLE ---
 function switchIoTab(tab, btnElem) {
     state.activeIoTab = tab;
     document.querySelectorAll('#io-table .sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -4864,6 +6156,7 @@ function loadLocalStorageDraft() {
             bottom: 30px; 
             left: 50%; 
             transform: translateX(-50%);
+            width: max-content;
             background: #ffffff; 
             padding: 10px 15px; 
             border-radius: 30px; 
@@ -4884,6 +6177,8 @@ function loadLocalStorageDraft() {
             align-items: center;
             gap: 8px;
             background: #ffffff;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .pipe-btn::before {
             content: '';
